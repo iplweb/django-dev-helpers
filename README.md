@@ -1,6 +1,6 @@
 # django-dev-helpers
 
-[![CI](https://github.com/mpasternak/django-dev-helpers/actions/workflows/ci.yml/badge.svg)](https://github.com/mpasternak/django-dev-helpers/actions/workflows/ci.yml)
+[![CI](https://github.com/iplweb/django-dev-helpers/actions/workflows/ci.yml/badge.svg)](https://github.com/iplweb/django-dev-helpers/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
 [![Django](https://img.shields.io/badge/django-4.2%20%7C%205.0%20%7C%205.1%20%7C%205.2-green)](https://www.djangoproject.com/)

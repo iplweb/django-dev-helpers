@@ -39,10 +39,10 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/mpasternak/django-dev-helpers"
-Repository = "https://github.com/mpasternak/django-dev-helpers"
-Issues = "https://github.com/mpasternak/django-dev-helpers/issues"
-Changelog = "https://github.com/mpasternak/django-dev-helpers/blob/main/CHANGELOG.md"
+Homepage = "https://github.com/iplweb/django-dev-helpers"
+Repository = "https://github.com/iplweb/django-dev-helpers"
+Issues = "https://github.com/iplweb/django-dev-helpers/issues"
+Changelog = "https://github.com/iplweb/django-dev-helpers/blob/main/CHANGELOG.md"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/django_dev_helpers"]
