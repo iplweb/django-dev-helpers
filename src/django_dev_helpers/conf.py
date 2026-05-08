@@ -62,6 +62,12 @@ _SAFETY_DEFAULTS: dict[str, Any] = {
     "non_serving_commands": [],
 }
 
+_CLAUDE_MD_DEFAULTS: dict[str, Any] = {
+    "mode": "warn",
+    "files": ["CLAUDE.md", "AGENTS.md"],
+    "marker": "<!-- django-dev-helpers:agent-help -->",
+}
+
 _DEFAULTS: dict[str, Any] = {
     "enabled": None,
     "autologin": _AUTOLOGIN_DEFAULTS,
@@ -71,10 +77,12 @@ _DEFAULTS: dict[str, Any] = {
     "gitignore": _GITIGNORE_DEFAULTS,
     "lookup": _LOOKUP_DEFAULTS,
     "safety": _SAFETY_DEFAULTS,
+    "claude_md": _CLAUDE_MD_DEFAULTS,
 }
 
 _VALID_GITIGNORE_MODES = {"warn", "auto-add", "error", "off"}
 _VALID_LOOKUP_SOURCES = {"auto", "env", "settings", "sidecar"}
+_VALID_CLAUDE_MD_MODES = {"warn", "off"}
 _KNOWN_TOP_LEVEL_KEYS = set(_DEFAULTS.keys())
 
 
@@ -143,6 +151,21 @@ def _validate(merged: dict[str, Any], raw: dict[str, Any]) -> None:
             "DJANGO_DEV_HELPERS['lookup']['callable'] must be a 'module.path:attr' string or None."
         )
 
+    claude_md_mode = merged["claude_md"]["mode"]
+    if claude_md_mode not in _VALID_CLAUDE_MD_MODES:
+        raise ImproperlyConfigured(
+            f"DJANGO_DEV_HELPERS['claude_md']['mode']={claude_md_mode!r} is not valid. "
+            f"Choose one of: {sorted(_VALID_CLAUDE_MD_MODES)}."
+        )
+
+    claude_md_files = merged["claude_md"]["files"]
+    if not isinstance(claude_md_files, (list, tuple)) or not all(isinstance(f, str) for f in claude_md_files):
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['claude_md']['files'] must be a list of strings.")
+
+    claude_md_marker = merged["claude_md"]["marker"]
+    if not isinstance(claude_md_marker, str) or not claude_md_marker:
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['claude_md']['marker'] must be a non-empty string.")
+
 
 def _apply_env_overrides(merged: dict[str, Any], raw: dict[str, Any]) -> None:
     """Pull a small set of orchestrator-set env vars into merged config.
@@ -173,6 +196,7 @@ class DevHelpersConfig:
         self.gitignore = _dict_to_namespace(merged["gitignore"])
         self.lookup = _dict_to_namespace(merged["lookup"])
         self.safety = _dict_to_namespace(merged["safety"])
+        self.claude_md = _dict_to_namespace(merged["claude_md"])
 
     def is_active(self) -> bool:
         if self.enabled is False:
