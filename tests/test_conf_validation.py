@@ -8,59 +8,66 @@ from django.test import override_settings
 def test_unknown_top_level_key_raises():
     from django_dev_helpers.conf import DevHelpersConfig
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "no_such_section": {}}
-    ), pytest.raises(ImproperlyConfigured, match="unknown top-level keys"):
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "no_such_section": {}}),
+        pytest.raises(ImproperlyConfigured, match="unknown top-level keys"),
+    ):
         DevHelpersConfig()
 
 
 def test_invalid_gitignore_mode_raises():
     from django_dev_helpers.conf import DevHelpersConfig
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "gitignore": {"mode": "WARN"}}
-    ), pytest.raises(ImproperlyConfigured, match=r"gitignore.*mode"):
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "gitignore": {"mode": "WARN"}}),
+        pytest.raises(ImproperlyConfigured, match=r"gitignore.*mode"),
+    ):
         DevHelpersConfig()
 
 
 def test_invalid_lookup_source_raises():
     from django_dev_helpers.conf import DevHelpersConfig
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "lookup": {"source": "magic"}}
-    ), pytest.raises(ImproperlyConfigured, match=r"lookup.*source"):
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "lookup": {"source": "magic"}}),
+        pytest.raises(ImproperlyConfigured, match=r"lookup.*source"),
+    ):
         DevHelpersConfig()
 
 
 def test_extra_cookies_must_be_list_of_dicts():
     from django_dev_helpers.conf import DevHelpersConfig
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "autologin": {"extra_cookies": "not-a-list"}}
-    ), pytest.raises(ImproperlyConfigured, match="extra_cookies"):
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "autologin": {"extra_cookies": "not-a-list"}}),
+        pytest.raises(ImproperlyConfigured, match="extra_cookies"),
+    ):
         DevHelpersConfig()
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "autologin": {"extra_cookies": ["not-a-dict"]}}
-    ), pytest.raises(ImproperlyConfigured, match="extra_cookies"):
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "autologin": {"extra_cookies": ["not-a-dict"]}}),
+        pytest.raises(ImproperlyConfigured, match="extra_cookies"),
+    ):
         DevHelpersConfig()
 
 
 def test_allowed_hosts_must_be_list():
     from django_dev_helpers.conf import DevHelpersConfig
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "autologin": {"allowed_hosts": "ngrok.io"}}
-    ), pytest.raises(ImproperlyConfigured, match="allowed_hosts"):
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "autologin": {"allowed_hosts": "ngrok.io"}}),
+        pytest.raises(ImproperlyConfigured, match="allowed_hosts"),
+    ):
         DevHelpersConfig()
 
 
 def test_callable_must_be_string_or_none():
     from django_dev_helpers.conf import DevHelpersConfig
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "lookup": {"callable": 42}}
-    ), pytest.raises(ImproperlyConfigured, match="callable"):
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "lookup": {"callable": 42}}),
+        pytest.raises(ImproperlyConfigured, match="callable"),
+    ):
         DevHelpersConfig()
 
 
@@ -109,7 +116,8 @@ def test_safety_non_serving_commands_extension():
 def test_settings_must_be_dict():
     from django_dev_helpers.conf import DevHelpersConfig
 
-    with override_settings(DJANGO_DEV_HELPERS=["not", "a", "dict"]), pytest.raises(
-        ImproperlyConfigured, match="must be a dict"
+    with (
+        override_settings(DJANGO_DEV_HELPERS=["not", "a", "dict"]),
+        pytest.raises(ImproperlyConfigured, match="must be a dict"),
     ):
         DevHelpersConfig()

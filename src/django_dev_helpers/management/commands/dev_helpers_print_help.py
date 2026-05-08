@@ -11,9 +11,7 @@ class Command(BaseCommand):
 
         cfg = get_config()
         if not cfg.is_active():
-            self.stderr.write(
-                "django-dev-helpers is not active; set DJANGO_DEV_HELPERS_ENABLED=1"
-            )
+            self.stderr.write("django-dev-helpers is not active; set DJANGO_DEV_HELPERS_ENABLED=1")
             sys.exit(1)
 
         from django_dev_helpers.prompt import render_template

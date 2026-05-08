@@ -73,9 +73,7 @@ def render_template(cfg) -> str:
     if show_creds and db_password:
         quoted_password = shlex.quote(db_password)
         pg_command_with_or_without_password = (
-            f"PGPASSWORD={quoted_password} psql"
-            f' -h "$PG_HOST" -p "$PG_PORT"'
-            f" -U {quoted_user} -d {quoted_name}"
+            f'PGPASSWORD={quoted_password} psql -h "$PG_HOST" -p "$PG_PORT" -U {quoted_user} -d {quoted_name}'
         )
     else:
         pg_command_with_or_without_password = (

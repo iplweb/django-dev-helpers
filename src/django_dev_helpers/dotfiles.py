@@ -61,9 +61,7 @@ def _resolve_via_callable(cfg) -> dict:
     if not spec:
         return {}
     if ":" not in spec:
-        logger.warning(
-            "django-dev-helpers: lookup.callable must be 'module.path:attr', got %r", spec
-        )
+        logger.warning("django-dev-helpers: lookup.callable must be 'module.path:attr', got %r", spec)
         return {}
     module_path, attr = spec.split(":", 1)
     try:
@@ -78,9 +76,7 @@ def _resolve_via_callable(cfg) -> dict:
         logger.exception("django-dev-helpers: lookup.callable %r raised", spec)
         return {}
     if not isinstance(result, dict):
-        logger.warning(
-            "django-dev-helpers: lookup.callable %r returned %r, expected dict", spec, type(result)
-        )
+        logger.warning("django-dev-helpers: lookup.callable %r returned %r, expected dict", spec, type(result))
         return {}
     return result
 
@@ -109,9 +105,7 @@ def _resolve_via_env() -> dict:
             try:
                 info[info_key] = int(value)
             except ValueError:
-                logger.warning(
-                    "django-dev-helpers: %s=%r is not an int, ignoring", env_key, value
-                )
+                logger.warning("django-dev-helpers: %s=%r is not an int, ignoring", env_key, value)
     return info
 
 
@@ -287,9 +281,7 @@ def remove_all_dotfiles(cfg) -> None:
         except FileNotFoundError:
             pass
         except OSError:
-            logger.exception(
-                "django-dev-helpers: failed to remove dotfile %s", root / filename
-            )
+            logger.exception("django-dev-helpers: failed to remove dotfile %s", root / filename)
 
 
 def register_cleanup(cfg) -> None:

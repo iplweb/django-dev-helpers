@@ -7,6 +7,7 @@ from django.contrib.auth.models import User
 @pytest.fixture(autouse=True)
 def _reset_config():
     from django_dev_helpers.conf import reset_config
+
     reset_config()
     yield
     reset_config()
@@ -40,6 +41,4 @@ def autologin_token():
 
 @pytest.fixture
 def admin_user(db):
-    return User.objects.create_superuser(
-        username="admin", email="admin@test.com", password="password"
-    )
+    return User.objects.create_superuser(username="admin", email="admin@test.com", password="password")

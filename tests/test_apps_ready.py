@@ -42,7 +42,7 @@ def test_token_initialised_during_ready(runserver_argv, autoreload_child, tmp_pa
             "agent_help": {"auto_print": False},
             "browser_open": {"enabled": False},
             "gitignore": {"mode": "off"},
-        }
+        },
     ):
         from django_dev_helpers.apps import DjangoDevHelpersConfig
         from django_dev_helpers.conf import reset_config
@@ -63,7 +63,7 @@ def test_browser_sentinel_gates_second_ready(runserver_argv, autoreload_child, t
             "agent_help": {"auto_print": False},
             "browser_open": {"enabled": True, "probe_timeout_seconds": 0.1},
             "gitignore": {"mode": "off"},
-        }
+        },
     ):
         from django_dev_helpers.apps import DjangoDevHelpersConfig
         from django_dev_helpers.conf import reset_config
@@ -90,7 +90,7 @@ def test_help_print_sentinel_gates_second_ready(runserver_argv, autoreload_child
             "agent_help": {"auto_print": True},
             "browser_open": {"enabled": False},
             "gitignore": {"mode": "off"},
-        }
+        },
     ):
         from django_dev_helpers.apps import DjangoDevHelpersConfig
         from django_dev_helpers.conf import reset_config
@@ -118,9 +118,10 @@ def test_inactive_skips_all_side_effects(monkeypatch, tmp_path):
         reset_config()
         config = DjangoDevHelpersConfig.create("django_dev_helpers")
 
-        with mock.patch("django_dev_helpers.tokens.init_token") as token, mock.patch(
-            "django_dev_helpers.browser.spawn_self_probe_thread"
-        ) as spawn:
+        with (
+            mock.patch("django_dev_helpers.tokens.init_token") as token,
+            mock.patch("django_dev_helpers.browser.spawn_self_probe_thread") as spawn,
+        ):
             config.ready()
             assert token.call_count == 0
             assert spawn.call_count == 0
@@ -138,7 +139,7 @@ def test_autoreload_parent_skips_side_effects(monkeypatch, tmp_path):
             "agent_help": {"auto_print": True},
             "browser_open": {"enabled": True},
             "gitignore": {"mode": "off"},
-        }
+        },
     ):
         from django_dev_helpers.apps import DjangoDevHelpersConfig
         from django_dev_helpers.conf import reset_config
@@ -146,11 +147,10 @@ def test_autoreload_parent_skips_side_effects(monkeypatch, tmp_path):
         reset_config()
         config = DjangoDevHelpersConfig.create("django_dev_helpers")
 
-        with mock.patch(
-            "django_dev_helpers.dotfiles.write_all_dotfiles"
-        ) as write, mock.patch(
-            "django_dev_helpers.browser.spawn_self_probe_thread"
-        ) as spawn:
+        with (
+            mock.patch("django_dev_helpers.dotfiles.write_all_dotfiles") as write,
+            mock.patch("django_dev_helpers.browser.spawn_self_probe_thread") as spawn,
+        ):
             config.ready()
             # Parent watcher: token still init'd (so child inherits) but
             # no dotfile writes, no browser open.

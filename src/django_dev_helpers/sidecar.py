@@ -38,9 +38,7 @@ def read_sidecar(project_root: Path) -> dict[str, Any] | None:
     except FileNotFoundError:
         return None
     except (OSError, tomllib.TOMLDecodeError):
-        logger.warning(
-            "django-dev-helpers: failed to read sidecar at %s", path, exc_info=True
-        )
+        logger.warning("django-dev-helpers: failed to read sidecar at %s", path, exc_info=True)
         return None
 
 
