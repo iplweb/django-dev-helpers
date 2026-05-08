@@ -89,6 +89,57 @@ def test_extra_cookies_set(client, admin_user, autologin_token):
         assert "test_cookie" in response.cookies
 
 
+def test_localhost_with_loopback_remote_addr_allowed(client, admin_user, autologin_token):
+    with override_settings(ALLOWED_HOSTS=["*"]):
+        url = f"/__autologin__/?token={autologin_token}"
+        response = client.get(url, SERVER_NAME="localhost", REMOTE_ADDR="127.0.0.1")
+    assert response.status_code == 302
+
+
+def test_localhost_with_non_loopback_remote_addr_404(client, admin_user, autologin_token):
+    with override_settings(ALLOWED_HOSTS=["*"]):
+        url = f"/__autologin__/?token={autologin_token}"
+        response = client.get(url, SERVER_NAME="localhost", REMOTE_ADDR="192.168.1.50")
+    assert response.status_code == 404
+
+
+def test_localhost_with_ipv6_loopback_remote_addr_allowed(client, admin_user, autologin_token):
+    with override_settings(ALLOWED_HOSTS=["*"]):
+        url = f"/__autologin__/?token={autologin_token}"
+        response = client.get(url, SERVER_NAME="localhost", REMOTE_ADDR="::1")
+    assert response.status_code == 302
+
+
+def test_explicit_allowed_host_bypasses_remote_addr_check(client, admin_user, autologin_token):
+    with override_settings(
+        ALLOWED_HOSTS=["*"],
+        DJANGO_DEV_HELPERS={
+            "enabled": True,
+            "autologin": {"allowed_hosts": ["example.com"]},
+        },
+    ):
+        from django_dev_helpers.conf import reset_config
+        reset_config()
+        url = f"/__autologin__/?token={autologin_token}"
+        response = client.get(url, SERVER_NAME="example.com", REMOTE_ADDR="192.168.1.50")
+    assert response.status_code == 302
+
+
+def test_localhost_with_missing_remote_addr_404(admin_user, autologin_token):
+    from django.http import Http404
+
+    from django_dev_helpers.views import autologin
+
+    factory = RequestFactory()
+    request = factory.get(
+        f"/__autologin__/?token={autologin_token}",
+        SERVER_NAME="localhost",
+    )
+    request.META.pop("REMOTE_ADDR", None)
+    with override_settings(ALLOWED_HOSTS=["*"]), pytest.raises(Http404):
+        autologin(request)
+
+
 def test_flash_message(client, admin_user, autologin_token):
     with override_settings(
         DJANGO_DEV_HELPERS={

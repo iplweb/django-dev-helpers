@@ -44,6 +44,10 @@ def discover_bind_host() -> str:
         if arg == "runserver":
             if i + 1 < len(argv):
                 addr = argv[i + 1]
+                if ":" not in addr and addr.isdigit():
+                    return "localhost"
+                if addr == "::":
+                    return "localhost"
                 host = addr.rsplit(":", 1)[0] if ":" in addr else addr
                 if host in ("0.0.0.0", "::", ""):
                     return "localhost"

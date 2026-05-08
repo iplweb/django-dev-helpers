@@ -24,7 +24,7 @@ class Command(BaseCommand):
             sys.exit(1)
 
         content = gitignore_path.read_text()
-        missing = get_missing_entries(content)
+        missing = get_missing_entries(content, cfg)
         if missing:
             self.stderr.write(f"Missing .gitignore entries: {', '.join(missing)}")
             sys.exit(1)

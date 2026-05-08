@@ -196,14 +196,16 @@ class DevHelpersConfig:
         if hostname is None:
             raise Http404()
         hostname = hostname.lower()
+        extra_allow = self.autologin.allowed_hosts or []
+        if any(fnmatch.fnmatchcase(hostname, pat.lower()) for pat in extra_allow):
+            return
         default_allow = {"localhost", "127.0.0.1", "[::1]"}
         if hostname in default_allow:
-            return
-        extra_allow = self.autologin.allowed_hosts or []
-        if not any(
-            fnmatch.fnmatchcase(hostname, pat.lower()) for pat in extra_allow
-        ):
-            raise Http404()
+            loopback_addrs = {"127.0.0.1", "::1", "::ffff:127.0.0.1"}
+            remote_addr = (request.META.get("REMOTE_ADDR") or "").strip()
+            if remote_addr in loopback_addrs:
+                return
+        raise Http404()
 
 
 _config: DevHelpersConfig | None = None

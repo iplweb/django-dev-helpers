@@ -127,3 +127,112 @@ def test_no_git_dir(tmp_path):
         cfg = DevHelpersConfig()
         result = check_gitignore(cfg)
         assert result is None
+
+
+def test_required_entries_uses_custom_filenames(git_dir):
+    from django_dev_helpers.conf import DevHelpersConfig, reset_config
+    from django_dev_helpers.gitignore import required_entries
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={
+            "enabled": True,
+            "dotfiles": {
+                "directory": str(git_dir),
+                "token_filename": ".my_token",
+                "port_filename": ".my_port",
+                "pg_host_filename": ".my_pg_host",
+                "pg_port_filename": ".my_pg_port",
+                "redis_host_filename": ".my_redis_host",
+                "redis_port_filename": ".my_redis_port",
+            },
+        }
+    ):
+        reset_config()
+        cfg = DevHelpersConfig()
+        assert required_entries(cfg) == [
+            ".my_token",
+            ".my_port",
+            ".my_pg_host",
+            ".my_pg_port",
+            ".my_redis_host",
+            ".my_redis_port",
+        ]
+
+
+def test_get_missing_entries_with_cfg_uses_custom_filenames(git_dir):
+    from django_dev_helpers.conf import DevHelpersConfig, reset_config
+    from django_dev_helpers.gitignore import get_missing_entries
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={
+            "enabled": True,
+            "dotfiles": {
+                "directory": str(git_dir),
+                "token_filename": ".my_token",
+            },
+        }
+    ):
+        reset_config()
+        cfg = DevHelpersConfig()
+        # Default token name is present, but the configured custom name is not.
+        content = ".dev_helpers_token\n"
+        missing = get_missing_entries(content, cfg)
+        assert ".my_token" in missing
+        assert ".dev_helpers_token" not in missing
+
+
+def test_warn_uses_custom_token_filename(git_dir, caplog):
+    import logging
+
+    from django_dev_helpers.conf import DevHelpersConfig, reset_config
+    from django_dev_helpers.gitignore import check_gitignore
+
+    gitignore_file = git_dir / ".gitignore"
+    gitignore_file.write_text("")
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={
+            "enabled": True,
+            "dotfiles": {
+                "directory": str(git_dir),
+                "token_filename": ".secret_token_xyz",
+            },
+            "gitignore": {"mode": "warn", "path": str(gitignore_file)},
+        }
+    ):
+        reset_config()
+        cfg = DevHelpersConfig()
+        with caplog.at_level(logging.WARNING, logger="django_dev_helpers.gitignore"):
+            check_gitignore(cfg)
+        combined = "\n".join(rec.message for rec in caplog.records)
+        assert ".secret_token_xyz" in combined
+        # Default name must not be reported when a custom one is configured.
+        assert ".dev_helpers_token" not in combined
+
+
+def test_auto_add_writes_custom_filenames(git_dir):
+    from django_dev_helpers.conf import DevHelpersConfig, reset_config
+    from django_dev_helpers.gitignore import check_gitignore
+
+    gitignore_file = git_dir / ".gitignore"
+    gitignore_file.write_text("*.pyc\n")
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={
+            "enabled": True,
+            "dotfiles": {
+                "directory": str(git_dir),
+                "token_filename": ".secret_token_xyz",
+                "port_filename": ".my_port_file",
+            },
+            "gitignore": {"mode": "auto-add", "path": str(gitignore_file)},
+        }
+    ):
+        reset_config()
+        cfg = DevHelpersConfig()
+        check_gitignore(cfg)
+        content = gitignore_file.read_text()
+        assert ".secret_token_xyz" in content
+        assert ".my_port_file" in content
+        assert ".dev_helpers_token" not in content
+        assert ".dev_helpers_port" not in content

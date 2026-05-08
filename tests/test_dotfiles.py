@@ -90,3 +90,66 @@ def test_write_skip_none_values(cfg_with_dir, dotfile_dir):
     with patch("django_dev_helpers.dotfiles.discover_port", return_value=None):
         write_all_dotfiles(cfg_with_dir)
     assert not (dotfile_dir / ".dev_helpers_port").exists()
+
+
+def test_discover_bind_host_no_arg(monkeypatch):
+    import sys
+
+    from django_dev_helpers.dotfiles import discover_bind_host
+
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver"])
+    assert discover_bind_host() == "localhost"
+
+
+def test_discover_bind_host_port_only(monkeypatch):
+    import sys
+
+    from django_dev_helpers.dotfiles import discover_bind_host
+
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "9000"])
+    assert discover_bind_host() == "localhost"
+
+
+def test_discover_bind_host_localhost_with_port(monkeypatch):
+    import sys
+
+    from django_dev_helpers.dotfiles import discover_bind_host
+
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "localhost:9000"])
+    assert discover_bind_host() == "localhost"
+
+
+def test_discover_bind_host_all_zeros(monkeypatch):
+    import sys
+
+    from django_dev_helpers.dotfiles import discover_bind_host
+
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "0.0.0.0:9000"])
+    assert discover_bind_host() == "localhost"
+
+
+def test_discover_bind_host_loopback_ip(monkeypatch):
+    import sys
+
+    from django_dev_helpers.dotfiles import discover_bind_host
+
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "127.0.0.1:9000"])
+    assert discover_bind_host() == "127.0.0.1"
+
+
+def test_discover_bind_host_lan_ip(monkeypatch):
+    import sys
+
+    from django_dev_helpers.dotfiles import discover_bind_host
+
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "192.168.1.10:9000"])
+    assert discover_bind_host() == "192.168.1.10"
+
+
+def test_discover_bind_host_ipv6_unspecified(monkeypatch):
+    import sys
+
+    from django_dev_helpers.dotfiles import discover_bind_host
+
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "::"])
+    assert discover_bind_host() == "localhost"

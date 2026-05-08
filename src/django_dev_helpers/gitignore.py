@@ -8,6 +8,9 @@ from django_dev_helpers.project_root import resolve_project_root
 
 logger = logging.getLogger(__name__)
 
+# Default filenames; kept for backward compatibility. Prefer required_entries(cfg)
+# when an actual config is available, since users may customise dotfile filenames
+# via DJANGO_DEV_HELPERS["dotfiles"][..._filename].
 ENTRIES = [
     ".dev_helpers_token",
     ".dev_helpers_port",
@@ -18,9 +21,22 @@ ENTRIES = [
 ]
 
 
-def get_missing_entries(gitignore_content: str) -> list[str]:
+def required_entries(cfg) -> list[str]:
+    df = cfg.dotfiles
+    return [
+        df.token_filename,
+        df.port_filename,
+        df.pg_host_filename,
+        df.pg_port_filename,
+        df.redis_host_filename,
+        df.redis_port_filename,
+    ]
+
+
+def get_missing_entries(gitignore_content: str, cfg=None) -> list[str]:
     existing = {line.strip() for line in gitignore_content.splitlines()}
-    return [entry for entry in ENTRIES if entry not in existing]
+    entries = required_entries(cfg) if cfg is not None else ENTRIES
+    return [entry for entry in entries if entry not in existing]
 
 
 def get_gitignore_path(cfg) -> Path:
@@ -38,7 +54,7 @@ def check_gitignore(cfg):
 
     content = gitignore_path.read_text() if gitignore_path.exists() else ""
 
-    missing = get_missing_entries(content)
+    missing = get_missing_entries(content, cfg)
     if not missing:
         return
 

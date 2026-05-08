@@ -63,6 +63,10 @@ def wait_for_http(cfg) -> None:
             if response.status < 500:
                 open_browser(cfg)
                 return
+        except urllib.error.HTTPError as exc:
+            if exc.code < 500:
+                open_browser(cfg)
+                return
         except (urllib.error.URLError, ConnectionError, TimeoutError, OSError):
             pass
         time.sleep(0.5)

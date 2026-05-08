@@ -26,28 +26,41 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
+        from django.core.exceptions import ImproperlyConfigured
+
         from django_dev_helpers.conf import get_config
 
-        cfg = get_config()
         skip_services = options["skip_services"]
         output_json = options["output_json"]
 
         checks: list[dict] = []
 
         self._check_config_dict(checks)
-        self._check_activation(cfg, checks)
-        self._check_autologin_config(cfg, checks)
-        self._check_user_exists(cfg, checks)
-        if not skip_services:
-            self._check_db_reachable(checks)
-            self._check_redis_reachable(cfg, checks)
-        self._check_token_env(checks)
-        self._check_dotfile_dir_writable(cfg, checks)
-        self._check_gitignore(cfg, checks)
-        self._check_allowed_hosts(checks)
-        self._check_secret_key(checks)
-        self._check_legacy_run_site_dotfiles(cfg, checks)
-        self._check_sidecar(cfg, checks)
+
+        cfg = None
+        try:
+            cfg = get_config()
+        except ImproperlyConfigured as exc:
+            checks.append({
+                "name": "Config",
+                "status": "error",
+                "message": str(exc),
+            })
+
+        if cfg is not None:
+            self._check_activation(cfg, checks)
+            self._check_autologin_config(cfg, checks)
+            self._check_user_exists(cfg, checks)
+            if not skip_services:
+                self._check_db_reachable(checks)
+                self._check_redis_reachable(cfg, checks)
+            self._check_token_env(checks)
+            self._check_dotfile_dir_writable(cfg, checks)
+            self._check_gitignore(cfg, checks)
+            self._check_allowed_hosts(checks)
+            self._check_secret_key(checks)
+            self._check_legacy_run_site_dotfiles(cfg, checks)
+            self._check_sidecar(cfg, checks)
 
         has_errors = any(c["status"] == "error" for c in checks)
         has_warnings = any(c["status"] == "warning" for c in checks)
@@ -264,7 +277,7 @@ class Command(BaseCommand):
                 })
                 return
             content = gitignore_path.read_text()
-            missing = get_missing_entries(content)
+            missing = get_missing_entries(content, cfg)
             if missing:
                 checks.append({
                     "name": ".gitignore",
