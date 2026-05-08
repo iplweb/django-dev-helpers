@@ -82,6 +82,7 @@ def test_extra_cookies_set(client, admin_user, autologin_token):
         }
     ):
         from django_dev_helpers.conf import reset_config
+
         reset_config()
         url = f"/__autologin__/?token={autologin_token}"
         response = client.get(url)
@@ -119,6 +120,7 @@ def test_explicit_allowed_host_bypasses_remote_addr_check(client, admin_user, au
         },
     ):
         from django_dev_helpers.conf import reset_config
+
         reset_config()
         url = f"/__autologin__/?token={autologin_token}"
         response = client.get(url, SERVER_NAME="example.com", REMOTE_ADDR="192.168.1.50")
@@ -151,6 +153,7 @@ def test_flash_message(client, admin_user, autologin_token):
         }
     ):
         from django_dev_helpers.conf import reset_config
+
         reset_config()
         url = f"/__autologin__/?token={autologin_token}"
         response = client.get(url)

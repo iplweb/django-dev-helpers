@@ -24,9 +24,11 @@ def test_wait_for_http_opens_browser_on_200():
     response = MagicMock()
     response.status = 200
 
-    with patch.object(browser.urllib.request, "urlopen", return_value=response) as urlopen, \
-         patch.object(browser, "open_browser") as open_browser, \
-         patch.object(browser.time, "sleep"):
+    with (
+        patch.object(browser.urllib.request, "urlopen", return_value=response) as urlopen,
+        patch.object(browser, "open_browser") as open_browser,
+        patch.object(browser.time, "sleep"),
+    ):
         browser.wait_for_http(cfg)
 
     assert urlopen.called
@@ -43,9 +45,11 @@ def test_wait_for_http_opens_browser_on_404_httperror():
         fp=None,
     )
 
-    with patch.object(browser.urllib.request, "urlopen", side_effect=http_error) as urlopen, \
-         patch.object(browser, "open_browser") as open_browser, \
-         patch.object(browser.time, "sleep"):
+    with (
+        patch.object(browser.urllib.request, "urlopen", side_effect=http_error) as urlopen,
+        patch.object(browser, "open_browser") as open_browser,
+        patch.object(browser.time, "sleep"),
+    ):
         browser.wait_for_http(cfg)
 
     assert urlopen.called
@@ -62,9 +66,11 @@ def test_wait_for_http_retries_on_503_then_times_out():
         fp=None,
     )
 
-    with patch.object(browser.urllib.request, "urlopen", side_effect=http_error) as urlopen, \
-         patch.object(browser, "open_browser") as open_browser, \
-         patch.object(browser.time, "sleep"):
+    with (
+        patch.object(browser.urllib.request, "urlopen", side_effect=http_error) as urlopen,
+        patch.object(browser, "open_browser") as open_browser,
+        patch.object(browser.time, "sleep"),
+    ):
         browser.wait_for_http(cfg)
 
     assert urlopen.call_count >= 1
@@ -83,13 +89,15 @@ def test_wait_for_http_retries_on_503_then_succeeds():
     success_response = MagicMock()
     success_response.status = 200
 
-    with patch.object(
-        browser.urllib.request,
-        "urlopen",
-        side_effect=[http_error, http_error, success_response],
-    ) as urlopen, \
-         patch.object(browser, "open_browser") as open_browser, \
-         patch.object(browser.time, "sleep"):
+    with (
+        patch.object(
+            browser.urllib.request,
+            "urlopen",
+            side_effect=[http_error, http_error, success_response],
+        ) as urlopen,
+        patch.object(browser, "open_browser") as open_browser,
+        patch.object(browser.time, "sleep"),
+    ):
         browser.wait_for_http(cfg)
 
     assert urlopen.call_count == 3
@@ -99,13 +107,15 @@ def test_wait_for_http_retries_on_503_then_succeeds():
 def test_wait_for_http_times_out_on_connection_refused():
     cfg = _make_cfg(probe_timeout_seconds=0.1)
 
-    with patch.object(
-        browser.urllib.request,
-        "urlopen",
-        side_effect=ConnectionRefusedError("refused"),
-    ) as urlopen, \
-         patch.object(browser, "open_browser") as open_browser, \
-         patch.object(browser.time, "sleep"):
+    with (
+        patch.object(
+            browser.urllib.request,
+            "urlopen",
+            side_effect=ConnectionRefusedError("refused"),
+        ) as urlopen,
+        patch.object(browser, "open_browser") as open_browser,
+        patch.object(browser.time, "sleep"),
+    ):
         browser.wait_for_http(cfg)
 
     assert urlopen.call_count >= 1

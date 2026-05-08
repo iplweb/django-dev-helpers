@@ -122,20 +122,14 @@ def _validate(merged: dict[str, Any], raw: dict[str, Any]) -> None:
 
     extra_cookies = merged["autologin"]["extra_cookies"]
     if not isinstance(extra_cookies, (list, tuple)):
-        raise ImproperlyConfigured(
-            "DJANGO_DEV_HELPERS['autologin']['extra_cookies'] must be a list of dicts."
-        )
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['autologin']['extra_cookies'] must be a list of dicts.")
     for i, cookie in enumerate(extra_cookies):
         if not isinstance(cookie, dict):
-            raise ImproperlyConfigured(
-                f"DJANGO_DEV_HELPERS['autologin']['extra_cookies'][{i}] must be a dict."
-            )
+            raise ImproperlyConfigured(f"DJANGO_DEV_HELPERS['autologin']['extra_cookies'][{i}] must be a dict.")
 
     allowed = merged["autologin"]["allowed_hosts"]
     if not isinstance(allowed, (list, tuple)):
-        raise ImproperlyConfigured(
-            "DJANGO_DEV_HELPERS['autologin']['allowed_hosts'] must be a list of strings."
-        )
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['autologin']['allowed_hosts'] must be a list of strings.")
 
     non_serving = merged["safety"]["non_serving_commands"]
     if not isinstance(non_serving, (list, tuple, set, frozenset)):

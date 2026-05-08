@@ -41,11 +41,13 @@ class Command(BaseCommand):
         try:
             cfg = get_config()
         except ImproperlyConfigured as exc:
-            checks.append({
-                "name": "Config",
-                "status": "error",
-                "message": str(exc),
-            })
+            checks.append(
+                {
+                    "name": "Config",
+                    "status": "error",
+                    "message": str(exc),
+                }
+            )
 
         if cfg is not None:
             self._check_activation(cfg, checks)
@@ -90,40 +92,54 @@ class Command(BaseCommand):
         if raw is None:
             checks.append({"name": "Config dict", "status": "ok", "message": "not set (using defaults)"})
         elif not isinstance(raw, dict):
-            checks.append({
-                "name": "Config dict",
-                "status": "error",
-                "message": "DJANGO_DEV_HELPERS must be a dict",
-            })
+            checks.append(
+                {
+                    "name": "Config dict",
+                    "status": "error",
+                    "message": "DJANGO_DEV_HELPERS must be a dict",
+                }
+            )
         else:
             known_keys = {
-                "enabled", "autologin", "dotfiles", "agent_help",
-                "browser_open", "gitignore", "lookup", "safety",
+                "enabled",
+                "autologin",
+                "dotfiles",
+                "agent_help",
+                "browser_open",
+                "gitignore",
+                "lookup",
+                "safety",
             }
             unknown = set(raw.keys()) - known_keys
             if unknown:
-                checks.append({
-                    "name": "Config dict",
-                    "status": "warning",
-                    "message": f"unknown keys: {', '.join(sorted(unknown))}",
-                })
+                checks.append(
+                    {
+                        "name": "Config dict",
+                        "status": "warning",
+                        "message": f"unknown keys: {', '.join(sorted(unknown))}",
+                    }
+                )
             else:
                 checks.append({"name": "Config dict", "status": "ok", "message": None})
 
     def _check_activation(self, cfg, checks: list[dict]) -> None:
         active = cfg.is_active()
         if not active:
-            checks.append({
-                "name": "Activation",
-                "status": "error",
-                "message": "not active; set DJANGO_DEV_HELPERS_ENABLED=1 or enabled=True",
-            })
+            checks.append(
+                {
+                    "name": "Activation",
+                    "status": "error",
+                    "message": "not active; set DJANGO_DEV_HELPERS_ENABLED=1 or enabled=True",
+                }
+            )
         elif not settings.DEBUG:
-            checks.append({
-                "name": "Activation",
-                "status": "error",
-                "message": "active but DEBUG=False (unsafe)",
-            })
+            checks.append(
+                {
+                    "name": "Activation",
+                    "status": "error",
+                    "message": "active but DEBUG=False (unsafe)",
+                }
+            )
         else:
             checks.append({"name": "Activation", "status": "ok", "message": None})
 
@@ -152,11 +168,13 @@ class Command(BaseCommand):
             issues.append(f"auth_backend '{backend}' is not importable")
 
         if issues:
-            checks.append({
-                "name": "Autologin config",
-                "status": "error",
-                "message": "; ".join(issues),
-            })
+            checks.append(
+                {
+                    "name": "Autologin config",
+                    "status": "error",
+                    "message": "; ".join(issues),
+                }
+            )
         else:
             checks.append({"name": "Autologin config", "status": "ok", "message": None})
 
@@ -171,20 +189,23 @@ class Command(BaseCommand):
             User.objects.get(**lookup)
             checks.append({"name": "Autologin user", "status": "ok", "message": None})
         except User.DoesNotExist:
-            checks.append({
-                "name": "Autologin user",
-                "status": "error",
-                "message": (
-                    f"user with {cfg.autologin.user_lookup_field}="
-                    f"'{cfg.autologin.user_lookup_value}' not found"
-                ),
-            })
+            checks.append(
+                {
+                    "name": "Autologin user",
+                    "status": "error",
+                    "message": (
+                        f"user with {cfg.autologin.user_lookup_field}='{cfg.autologin.user_lookup_value}' not found"
+                    ),
+                }
+            )
         except Exception as exc:
-            checks.append({
-                "name": "Autologin user",
-                "status": "warning",
-                "message": f"could not query: {exc}",
-            })
+            checks.append(
+                {
+                    "name": "Autologin user",
+                    "status": "warning",
+                    "message": f"could not query: {exc}",
+                }
+            )
 
     def _check_db_reachable(self, checks: list[dict]) -> None:
         try:
@@ -193,22 +214,26 @@ class Command(BaseCommand):
             connection.ensure_connection()
             checks.append({"name": "Database", "status": "ok", "message": None})
         except Exception as exc:
-            checks.append({
-                "name": "Database",
-                "status": "error",
-                "message": str(exc),
-            })
+            checks.append(
+                {
+                    "name": "Database",
+                    "status": "error",
+                    "message": str(exc),
+                }
+            )
 
     def _check_redis_reachable(self, cfg, checks: list[dict]) -> None:
         from django_dev_helpers.dotfiles import resolve_redis_endpoint
 
         endpoint = resolve_redis_endpoint(cfg)
         if endpoint is None:
-            checks.append({
-                "name": "Redis",
-                "status": "ok",
-                "message": "not configured (skipped)",
-            })
+            checks.append(
+                {
+                    "name": "Redis",
+                    "status": "ok",
+                    "message": "not configured (skipped)",
+                }
+            )
             return
 
         host, port = endpoint
@@ -219,28 +244,34 @@ class Command(BaseCommand):
             sock.close()
             checks.append({"name": "Redis", "status": "ok", "message": f"{host}:{port}"})
         except Exception as exc:
-            checks.append({
-                "name": "Redis",
-                "status": "warning",
-                "message": f"{host}:{port} unreachable: {exc}",
-            })
+            checks.append(
+                {
+                    "name": "Redis",
+                    "status": "warning",
+                    "message": f"{host}:{port} unreachable: {exc}",
+                }
+            )
 
     def _check_token_env(self, checks: list[dict]) -> None:
         from django_dev_helpers.tokens import ENV_VAR
 
         token = os.environ.get(ENV_VAR)
         if not token:
-            checks.append({
-                "name": "Token env var",
-                "status": "warning",
-                "message": f"{ENV_VAR} is not set",
-            })
+            checks.append(
+                {
+                    "name": "Token env var",
+                    "status": "warning",
+                    "message": f"{ENV_VAR} is not set",
+                }
+            )
         elif len(token) < 20:
-            checks.append({
-                "name": "Token env var",
-                "status": "warning",
-                "message": f"token is short ({len(token)} chars)",
-            })
+            checks.append(
+                {
+                    "name": "Token env var",
+                    "status": "warning",
+                    "message": f"token is short ({len(token)} chars)",
+                }
+            )
         else:
             checks.append({"name": "Token env var", "status": "ok", "message": None})
 
@@ -250,19 +281,23 @@ class Command(BaseCommand):
 
             root = resolve_project_root(cfg)
             if not os.access(root, os.W_OK):
-                checks.append({
-                    "name": "Dotfile dir",
-                    "status": "error",
-                    "message": f"{root} is not writable",
-                })
+                checks.append(
+                    {
+                        "name": "Dotfile dir",
+                        "status": "error",
+                        "message": f"{root} is not writable",
+                    }
+                )
             else:
                 checks.append({"name": "Dotfile dir", "status": "ok", "message": str(root)})
         except Exception as exc:
-            checks.append({
-                "name": "Dotfile dir",
-                "status": "error",
-                "message": str(exc),
-            })
+            checks.append(
+                {
+                    "name": "Dotfile dir",
+                    "status": "error",
+                    "message": str(exc),
+                }
+            )
 
     def _check_gitignore(self, cfg, checks: list[dict]) -> None:
         try:
@@ -270,55 +305,67 @@ class Command(BaseCommand):
 
             gitignore_path = get_gitignore_path(cfg)
             if not gitignore_path.exists():
-                checks.append({
-                    "name": ".gitignore",
-                    "status": "warning",
-                    "message": f".gitignore not found at {gitignore_path}",
-                })
+                checks.append(
+                    {
+                        "name": ".gitignore",
+                        "status": "warning",
+                        "message": f".gitignore not found at {gitignore_path}",
+                    }
+                )
                 return
             content = gitignore_path.read_text()
             missing = get_missing_entries(content, cfg)
             if missing:
-                checks.append({
-                    "name": ".gitignore",
-                    "status": "warning",
-                    "message": f"missing entries: {', '.join(missing)}",
-                })
+                checks.append(
+                    {
+                        "name": ".gitignore",
+                        "status": "warning",
+                        "message": f"missing entries: {', '.join(missing)}",
+                    }
+                )
             else:
                 checks.append({"name": ".gitignore", "status": "ok", "message": None})
         except ImportError:
-            checks.append({
-                "name": ".gitignore",
-                "status": "warning",
-                "message": "gitignore module not available",
-            })
+            checks.append(
+                {
+                    "name": ".gitignore",
+                    "status": "warning",
+                    "message": "gitignore module not available",
+                }
+            )
         except Exception as exc:
-            checks.append({
-                "name": ".gitignore",
-                "status": "warning",
-                "message": str(exc),
-            })
+            checks.append(
+                {
+                    "name": ".gitignore",
+                    "status": "warning",
+                    "message": str(exc),
+                }
+            )
 
     def _check_allowed_hosts(self, checks: list[dict]) -> None:
         _localhost = {"localhost", "127.0.0.1", "*"}
         non_local = [h for h in settings.ALLOWED_HOSTS if h not in _localhost]
         if non_local:
-            checks.append({
-                "name": "ALLOWED_HOSTS",
-                "status": "warning",
-                "message": f"non-localhost entries: {', '.join(non_local)}",
-            })
+            checks.append(
+                {
+                    "name": "ALLOWED_HOSTS",
+                    "status": "warning",
+                    "message": f"non-localhost entries: {', '.join(non_local)}",
+                }
+            )
         else:
             checks.append({"name": "ALLOWED_HOSTS", "status": "ok", "message": None})
 
     def _check_secret_key(self, checks: list[dict]) -> None:
         key = settings.SECRET_KEY
         if len(key) >= 50 and not key.startswith("django-insecure-"):
-            checks.append({
-                "name": "SECRET_KEY",
-                "status": "warning",
-                "message": "looks like a production secret (length >= 50, no django-insecure- prefix)",
-            })
+            checks.append(
+                {
+                    "name": "SECRET_KEY",
+                    "status": "warning",
+                    "message": "looks like a production secret (length >= 50, no django-insecure- prefix)",
+                }
+            )
         else:
             checks.append({"name": "SECRET_KEY", "status": "ok", "message": None})
 
@@ -328,29 +375,35 @@ class Command(BaseCommand):
 
             root = resolve_project_root(cfg)
         except Exception as exc:
-            checks.append({
-                "name": "Legacy .run_site_* dotfiles",
-                "status": "warning",
-                "message": f"could not resolve project root: {exc}",
-            })
+            checks.append(
+                {
+                    "name": "Legacy .run_site_* dotfiles",
+                    "status": "warning",
+                    "message": f"could not resolve project root: {exc}",
+                }
+            )
             return
         legacy = sorted(p.name for p in root.glob(".run_site_*"))
         if legacy:
-            checks.append({
-                "name": "Legacy .run_site_* dotfiles",
-                "status": "warning",
-                "message": (
-                    f"found {len(legacy)} legacy file(s) ({', '.join(legacy)}); "
-                    "these are leftovers from the run_site management command and "
-                    "are superseded by .dev_helpers_*. Safe to delete."
-                ),
-            })
+            checks.append(
+                {
+                    "name": "Legacy .run_site_* dotfiles",
+                    "status": "warning",
+                    "message": (
+                        f"found {len(legacy)} legacy file(s) ({', '.join(legacy)}); "
+                        "these are leftovers from the run_site management command and "
+                        "are superseded by .dev_helpers_*. Safe to delete."
+                    ),
+                }
+            )
         else:
-            checks.append({
-                "name": "Legacy .run_site_* dotfiles",
-                "status": "ok",
-                "message": None,
-            })
+            checks.append(
+                {
+                    "name": "Legacy .run_site_* dotfiles",
+                    "status": "ok",
+                    "message": None,
+                }
+            )
 
     def _check_sidecar(self, cfg, checks: list[dict]) -> None:
         try:
@@ -359,29 +412,35 @@ class Command(BaseCommand):
 
             root = resolve_project_root(cfg)
         except Exception as exc:
-            checks.append({
-                "name": "run-site sidecar",
-                "status": "warning",
-                "message": f"could not resolve project root: {exc}",
-            })
+            checks.append(
+                {
+                    "name": "run-site sidecar",
+                    "status": "warning",
+                    "message": f"could not resolve project root: {exc}",
+                }
+            )
             return
 
         path = sidecar.sidecar_path(root)
         if not path.exists():
-            checks.append({
-                "name": "run-site sidecar",
-                "status": "ok",
-                "message": "no .run-site-config (standalone or run-site not started)",
-            })
+            checks.append(
+                {
+                    "name": "run-site sidecar",
+                    "status": "ok",
+                    "message": "no .run-site-config (standalone or run-site not started)",
+                }
+            )
             return
 
         data = sidecar.read_sidecar(root)
         if data is None:
-            checks.append({
-                "name": "run-site sidecar",
-                "status": "warning",
-                "message": f"{path} exists but could not be parsed",
-            })
+            checks.append(
+                {
+                    "name": "run-site sidecar",
+                    "status": "warning",
+                    "message": f"{path} exists but could not be parsed",
+                }
+            )
             return
 
         endpoints = sidecar.extract_endpoints(data)
@@ -390,8 +449,10 @@ class Command(BaseCommand):
             summary_bits.append(f"pg={endpoints['pg_host']}:{endpoints['pg_port']}")
         if "redis_host" in endpoints and "redis_port" in endpoints:
             summary_bits.append(f"redis={endpoints['redis_host']}:{endpoints['redis_port']}")
-        checks.append({
-            "name": "run-site sidecar",
-            "status": "ok",
-            "message": f"{path.name} ({', '.join(summary_bits) or 'parsed'})",
-        })
+        checks.append(
+            {
+                "name": "run-site sidecar",
+                "status": "ok",
+                "message": f"{path.name} ({', '.join(summary_bits) or 'parsed'})",
+            }
+        )

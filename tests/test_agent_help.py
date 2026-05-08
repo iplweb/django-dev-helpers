@@ -47,6 +47,7 @@ def test_custom_template():
         }
     ):
         from django_dev_helpers.conf import DevHelpersConfig, reset_config
+
         reset_config()
         from django_dev_helpers.prompt import render_template
 

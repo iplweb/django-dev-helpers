@@ -9,6 +9,7 @@ def resolve_project_root(cfg) -> Path:
     if env_value:
         return Path(env_value).resolve()
     from django.conf import settings
+
     base_dir = Path(settings.BASE_DIR).resolve()
     markers = {"manage.py", "pyproject.toml", "runsite.toml", ".git"}
     for candidate in [base_dir, *base_dir.parents]:

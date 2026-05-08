@@ -65,9 +65,7 @@ def check_gitignore(cfg):
 
     if mode == "warn":
         entries_str = "\n".join(f"  - {entry}" for entry in missing)
-        logger.warning(
-            "django-dev-helpers: missing entries from .gitignore:\n%s", entries_str
-        )
+        logger.warning("django-dev-helpers: missing entries from .gitignore:\n%s", entries_str)
         return
 
     if mode == "auto-add":
@@ -81,6 +79,4 @@ def check_gitignore(cfg):
 
     if mode == "error":
         entries_str = "\n".join(f"  - {entry}" for entry in missing)
-        sys.exit(
-            f"Error: the following entries are missing from .gitignore:\n{entries_str}"
-        )
+        sys.exit(f"Error: the following entries are missing from .gitignore:\n{entries_str}")

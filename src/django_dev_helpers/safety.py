@@ -6,15 +6,29 @@ from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
 
 _NON_SERVING_COMMANDS = {
-    "migrate", "makemigrations", "showmigrations", "sqlmigrate",
-    "collectstatic", "compilemessages", "makemessages",
-    "test", "check", "diffsettings",
-    "shell", "dbshell",
-    "createsuperuser", "changepassword",
-    "dumpdata", "loaddata", "flush", "inspectdb",
-    "dev_helpers_doctor", "dev_helpers_print_help",
+    "migrate",
+    "makemigrations",
+    "showmigrations",
+    "sqlmigrate",
+    "collectstatic",
+    "compilemessages",
+    "makemessages",
+    "test",
+    "check",
+    "diffsettings",
+    "shell",
+    "dbshell",
+    "createsuperuser",
+    "changepassword",
+    "dumpdata",
+    "loaddata",
+    "flush",
+    "inspectdb",
+    "dev_helpers_doctor",
+    "dev_helpers_print_help",
     "dev_helpers_check_gitignore",
-    "help", "version",
+    "help",
+    "version",
 }
 
 

@@ -24,9 +24,7 @@ def autologin(request):
 
     User = get_user_model()
     try:
-        user = User.objects.get(
-            **{cfg.autologin.user_lookup_field: cfg.autologin.user_lookup_value}
-        )
+        user = User.objects.get(**{cfg.autologin.user_lookup_field: cfg.autologin.user_lookup_value})
     except User.DoesNotExist as exc:
         raise Http404() from exc
     except User.MultipleObjectsReturned as exc:
@@ -36,6 +34,7 @@ def autologin(request):
 
     if cfg.autologin.flash_message:
         from django.contrib import messages
+
         messages.success(request, cfg.autologin.flash_message)
 
     response = HttpResponseRedirect(cfg.autologin.redirect_to)

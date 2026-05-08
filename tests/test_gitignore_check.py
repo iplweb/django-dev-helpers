@@ -1,4 +1,3 @@
-
 import pytest
 from django.test import override_settings
 
@@ -27,14 +26,16 @@ def cfg_with_gitignore(git_dir):
 def test_all_entries_present(cfg_with_gitignore, git_dir):
     from django_dev_helpers.gitignore import get_missing_entries
 
-    content = "\n".join([
-        ".dev_helpers_token",
-        ".dev_helpers_port",
-        ".dev_helpers_pg_host",
-        ".dev_helpers_pg_port",
-        ".dev_helpers_redis_host",
-        ".dev_helpers_redis_port",
-    ])
+    content = "\n".join(
+        [
+            ".dev_helpers_token",
+            ".dev_helpers_port",
+            ".dev_helpers_pg_host",
+            ".dev_helpers_pg_port",
+            ".dev_helpers_redis_host",
+            ".dev_helpers_redis_port",
+        ]
+    )
     missing = get_missing_entries(content)
     assert missing == []
 
@@ -65,6 +66,7 @@ def test_mode_warn(cfg_with_gitignore, git_dir, caplog):
         }
     ):
         from django_dev_helpers.conf import reset_config
+
         reset_config()
         cfg = DevHelpersConfig()
         with caplog.at_level(logging.WARNING, logger="django_dev_helpers.gitignore"):
