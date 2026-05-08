@@ -3,7 +3,7 @@
 [![CI](https://github.com/iplweb/django-dev-helpers/actions/workflows/ci.yml/badge.svg)](https://github.com/iplweb/django-dev-helpers/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/django-4.2%20%7C%205.0%20%7C%205.1%20%7C%205.2-green)](https://www.djangoproject.com/)
+[![Django](https://img.shields.io/badge/django-4.2%20%7C%205.0%20%7C%205.1%20%7C%205.2%20%7C%206.0-green)](https://www.djangoproject.com/)
 
 Dev-time conveniences for Django projects: autologin endpoint, dotfiles for LLM coding agents, agent help prompt, and gitignore self-check.
 
@@ -137,6 +137,22 @@ This package exposes an autologin backdoor for development. It is **always off b
 
 - Python >= 3.11
 - Django >= 4.2
+
+## Supported versions
+
+Combinations exercised on every push by the CI matrix
+(`.github/workflows/ci.yml`):
+
+|             | Python 3.11 | Python 3.12 | Python 3.13 |
+|-------------|:-----------:|:-----------:|:-----------:|
+| Django 4.2  |      ✓      |      ✓      |      ✓      |
+| Django 5.0  |      ✓      |      ✓      |      ✓      |
+| Django 5.1  |      ✓      |      ✓      |      ✓      |
+| Django 5.2  |      ✓      |      ✓      |      ✓      |
+| Django 6.0  |      —      |      ✓      |      ✓      |
+
+Django 6.0 requires Python ≥ 3.12, so the `(3.11, 6.0)` cell is excluded
+from CI.
 
 ## License
 
