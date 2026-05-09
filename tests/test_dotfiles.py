@@ -153,3 +153,143 @@ def test_discover_bind_host_ipv6_unspecified(monkeypatch):
 
     monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "::"])
     assert discover_bind_host() == "localhost"
+
+
+def _write_min_sidecar(directory, *, port=49152, host="127.0.0.1"):
+    """Write a minimal .run-site-config exposing only the [web] section."""
+    (directory / ".run-site-config").write_text(
+        f'project_slug = "x"\n[web]\nhost = "{host}"\nport = {port}\n',
+        encoding="utf-8",
+    )
+
+
+def test_discover_port_falls_back_to_sidecar(monkeypatch, tmp_path):
+    """run-site orchestrator path: no 'runserver' in argv, port comes from sidecar."""
+    import sys
+
+    monkeypatch.delenv("DEV_HELPERS_PORT", raising=False)
+    monkeypatch.setattr(sys, "argv", ["run-site", "run"])
+    _write_min_sidecar(tmp_path, port=65359)
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
+    ):
+        from django_dev_helpers.conf import DevHelpersConfig, reset_config
+        from django_dev_helpers.dotfiles import discover_port
+
+        reset_config()
+        cfg = DevHelpersConfig()
+        assert discover_port(cfg) == "65359"
+
+
+def test_discover_bind_host_falls_back_to_sidecar(monkeypatch, tmp_path):
+    import sys
+
+    monkeypatch.setattr(sys, "argv", ["run-site", "run"])
+    _write_min_sidecar(tmp_path, host="example.local")
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
+    ):
+        from django_dev_helpers.conf import DevHelpersConfig, reset_config
+        from django_dev_helpers.dotfiles import discover_bind_host
+
+        reset_config()
+        cfg = DevHelpersConfig()
+        assert discover_bind_host(cfg) == "example.local"
+
+
+def test_discover_port_env_beats_sidecar(monkeypatch, tmp_path):
+    import sys
+
+    monkeypatch.setenv("DEV_HELPERS_PORT", "1234")
+    monkeypatch.setattr(sys, "argv", ["run-site", "run"])
+    _write_min_sidecar(tmp_path, port=65359)
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
+    ):
+        from django_dev_helpers.conf import DevHelpersConfig, reset_config
+        from django_dev_helpers.dotfiles import discover_port
+
+        reset_config()
+        cfg = DevHelpersConfig()
+        assert discover_port(cfg) == "1234"
+
+
+def test_discover_port_argv_beats_sidecar(monkeypatch, tmp_path):
+    """`runserver 9000` in argv must still win over the sidecar."""
+    import sys
+
+    monkeypatch.delenv("DEV_HELPERS_PORT", raising=False)
+    monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "9000"])
+    _write_min_sidecar(tmp_path, port=65359)
+
+    with override_settings(
+        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
+    ):
+        from django_dev_helpers.conf import DevHelpersConfig, reset_config
+        from django_dev_helpers.dotfiles import discover_port
+
+        reset_config()
+        cfg = DevHelpersConfig()
+        assert discover_port(cfg) == "9000"
+
+
+def test_resolve_project_root_prefers_runsite_marker_over_inner_manage_py(tmp_path, monkeypatch):
+    """src/-layout: manage.py in src/, runsite.toml at project root → root wins."""
+    project = tmp_path / "proj"
+    src = project / "src"
+    src.mkdir(parents=True)
+    (project / "runsite.toml").write_text("# run-site config\n", encoding="utf-8")
+    (src / "manage.py").write_text("# django entry\n", encoding="utf-8")
+
+    monkeypatch.delenv("DEV_HELPERS_PROJECT_ROOT", raising=False)
+
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True}, BASE_DIR=str(src)):
+        from django_dev_helpers.conf import DevHelpersConfig, reset_config
+        from django_dev_helpers.project_root import resolve_project_root
+
+        reset_config()
+        cfg = DevHelpersConfig()
+        assert resolve_project_root(cfg) == project.resolve()
+
+
+def test_resolve_project_root_run_site_config_marker(tmp_path, monkeypatch):
+    """If only the runtime sidecar exists (no runsite.toml), still climb to it."""
+    project = tmp_path / "proj"
+    src = project / "src"
+    src.mkdir(parents=True)
+    (project / ".run-site-config").write_text("project_slug = 'x'\n", encoding="utf-8")
+    (src / "manage.py").write_text("# django entry\n", encoding="utf-8")
+
+    monkeypatch.delenv("DEV_HELPERS_PROJECT_ROOT", raising=False)
+
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True}, BASE_DIR=str(src)):
+        from django_dev_helpers.conf import DevHelpersConfig, reset_config
+        from django_dev_helpers.project_root import resolve_project_root
+
+        reset_config()
+        cfg = DevHelpersConfig()
+        assert resolve_project_root(cfg) == project.resolve()
+
+
+def test_resolve_project_root_fallback_unchanged_without_run_site(tmp_path, monkeypatch):
+    """No run-site markers present → existing behavior (innermost manage.py)."""
+    project = tmp_path / "proj"
+    src = project / "src"
+    src.mkdir(parents=True)
+    (project / "pyproject.toml").write_text("# generic\n", encoding="utf-8")
+    (src / "manage.py").write_text("# django entry\n", encoding="utf-8")
+
+    monkeypatch.delenv("DEV_HELPERS_PROJECT_ROOT", raising=False)
+
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True}, BASE_DIR=str(src)):
+        from django_dev_helpers.conf import DevHelpersConfig, reset_config
+        from django_dev_helpers.project_root import resolve_project_root
+
+        reset_config()
+        cfg = DevHelpersConfig()
+        # Without a run-site marker, current behavior stops at innermost
+        # generic marker (manage.py in src/).
+        assert resolve_project_root(cfg) == src.resolve()

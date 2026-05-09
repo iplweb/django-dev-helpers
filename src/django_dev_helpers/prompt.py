@@ -42,8 +42,8 @@ def render_template(cfg) -> str:
     from . import dotfiles, project_root
 
     root = project_root.resolve_project_root(cfg)
-    port = dotfiles.discover_port()
-    raw_host = dotfiles.discover_bind_host()
+    port = dotfiles.discover_port(cfg)
+    raw_host = dotfiles.discover_bind_host(cfg)
     host = _substitute_host(raw_host)
 
     if getattr(cfg.agent_help, "display_host", None):

@@ -33,10 +33,10 @@ def _build_autologin_url(cfg, host: str, port: str) -> str:
 
 
 def open_browser(cfg) -> None:
-    host = dotfiles.discover_bind_host()
+    host = dotfiles.discover_bind_host(cfg)
     if host in ("0.0.0.0", ""):
         host = "localhost"
-    port = dotfiles.discover_port() or "8000"
+    port = dotfiles.discover_port(cfg) or "8000"
 
     if cfg.browser_open.url_path is None:
         url = _build_autologin_url(cfg, host, port) if cfg.autologin.enabled else f"http://{host}:{port}/"
@@ -48,10 +48,10 @@ def open_browser(cfg) -> None:
 
 
 def wait_for_http(cfg) -> None:
-    host = dotfiles.discover_bind_host()
+    host = dotfiles.discover_bind_host(cfg)
     if host in ("0.0.0.0", ""):
         host = "localhost"
-    port = dotfiles.discover_port() or "8000"
+    port = dotfiles.discover_port(cfg) or "8000"
     probe_path = cfg.browser_open.probe_path or "/admin/login/"
     url = f"http://{host}:{port}{probe_path}"
     timeout = cfg.browser_open.probe_timeout_seconds or 30.0

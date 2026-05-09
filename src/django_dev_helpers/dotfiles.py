@@ -22,7 +22,30 @@ _cleanup_registered = False
 _cleanup_done = False
 
 
-def discover_port() -> str | None:
+def _sidecar_web(cfg) -> dict:
+    """Return the sidecar's [web] section, or {} on any failure.
+
+    Used as a fallback for port/host discovery when the process was started
+    by run-site (so 'runserver' isn't in sys.argv) and the orchestrator
+    didn't propagate DEV_HELPERS_PORT.
+    """
+    try:
+        if cfg is None:
+            from django_dev_helpers.conf import get_config
+
+            cfg = get_config()
+        root = project_root.resolve_project_root(cfg)
+        data = sidecar_module.read_sidecar(root)
+    except Exception:
+        logger.exception("django-dev-helpers: failed to consult sidecar for endpoint discovery")
+        return {}
+    if not data:
+        return {}
+    web = data.get("web")
+    return web if isinstance(web, dict) else {}
+
+
+def discover_port(cfg=None) -> str | None:
     env_port = os.environ.get("DEV_HELPERS_PORT")
     if env_port:
         return env_port
@@ -35,10 +58,13 @@ def discover_port() -> str | None:
                     return addr.rsplit(":", 1)[-1]
                 return addr
             return "8000"
+    web_port = _sidecar_web(cfg).get("port")
+    if web_port is not None:
+        return str(web_port)
     return None
 
 
-def discover_bind_host() -> str:
+def discover_bind_host(cfg=None) -> str:
     argv = sys.argv
     for i, arg in enumerate(argv):
         if arg == "runserver":
@@ -53,6 +79,9 @@ def discover_bind_host() -> str:
                     return "localhost"
                 return host
             return "localhost"
+    web_host = _sidecar_web(cfg).get("host")
+    if isinstance(web_host, str) and web_host:
+        return web_host
     return "localhost"
 
 
@@ -232,7 +261,7 @@ def write_all_dotfiles(cfg) -> None:
         _atomic_write(token_path, token, mode=cfg.dotfiles.token_chmod)
         _written_files.append(token_path)
 
-    port = discover_port()
+    port = discover_port(cfg)
     if port:
         port_path = root / cfg.dotfiles.port_filename
         _atomic_write(port_path, port, mode=DEFAULT_DOTFILE_MODE)
