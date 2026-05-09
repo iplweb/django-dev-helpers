@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-dev-helpers"
-version = "0.1.0"
+version = "0.1.1"
 description = "Dev-time conveniences for Django projects: autologin endpoint, dotfiles for LLM agents, gitignore self-check"
 readme = "README.md"
 license = "MIT"
