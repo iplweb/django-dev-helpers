@@ -111,6 +111,79 @@ def render_template(cfg) -> str:
     )
 
 
+_STATIC_AGENT_HELP_TEMPLATE = """\
+{start_marker}
+## Local dev server (django-dev-helpers)
+
+When this project's Django dev server is running, runtime endpoint info is
+written to dotfiles in the project root. If a dotfile referenced below is
+missing, the dev server is not running.
+
+### Authenticated request to the Django app
+
+```bash
+TOKEN=$(cat {token_filename})
+PORT=$(cat {port_filename})
+JAR=$(mktemp)
+curl -sc "$JAR" -L "http://localhost:$PORT/{autologin_path}?token=$TOKEN" >/dev/null
+curl -sb "$JAR" "http://localhost:$PORT/<path>"
+rm "$JAR"
+```
+
+### PostgreSQL
+
+```bash
+PG_HOST=$(cat {pg_host_filename})
+PG_PORT=$(cat {pg_port_filename})
+psql -h "$PG_HOST" -p "$PG_PORT" -U <user> -d <db>
+```
+
+### Redis
+
+```bash
+REDIS_HOST=$(cat {redis_host_filename})
+REDIS_PORT=$(cat {redis_port_filename})
+redis-cli -h "$REDIS_HOST" -p "$REDIS_PORT"
+```
+{end_marker}
+"""
+
+
+def derive_end_marker(start_marker: str) -> str:
+    """Derive a paired end marker from the configured start marker.
+
+    `<!-- django-dev-helpers:agent-help -->` -> `<!-- django-dev-helpers:agent-help-end -->`
+    Falls back to appending `-end` if the marker doesn't match the HTML-comment shape.
+    """
+    suffix = " -->"
+    if start_marker.endswith(suffix):
+        body = start_marker[: -len(suffix)]
+        return f"{body}-end{suffix}"
+    return f"{start_marker}-end"
+
+
+def render_static_agent_help_block(cfg) -> str:
+    """Render the markdown block intended for AGENTS.md / CLAUDE.md.
+
+    The block is *static* in the sense that it never embeds runtime values
+    (host, port, db credentials). It only references dotfile filenames, so
+    the markdown does not need regeneration when the server restarts on a
+    different port or with different credentials.
+    """
+    autologin_path = cfg.autologin.url_path.lstrip("/")
+    return _STATIC_AGENT_HELP_TEMPLATE.format(
+        start_marker=cfg.claude_md.marker,
+        end_marker=derive_end_marker(cfg.claude_md.marker),
+        token_filename=cfg.dotfiles.token_filename,
+        port_filename=cfg.dotfiles.port_filename,
+        pg_host_filename=cfg.dotfiles.pg_host_filename,
+        pg_port_filename=cfg.dotfiles.pg_port_filename,
+        redis_host_filename=cfg.dotfiles.redis_host_filename,
+        redis_port_filename=cfg.dotfiles.redis_port_filename,
+        autologin_path=autologin_path,
+    )
+
+
 def register_first_request_print(cfg) -> None:
     from django.core.signals import request_started
 
