@@ -5,16 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.3] — 2026-05-11
+
+This release rolls up the post-0.1.2 work that had been accumulating
+under *Unreleased* together with a batch of fresh bug fixes around the
+agent-help banner and a new gitignore-fix management command.
 
 ### Added
-- `lookup.source = "sidecar"` and inclusion of the run-site `.run-site-config`
-  TOML file in the `auto` lookup chain. Order is now: callable → env →
-  sidecar → settings.
+- `dev_helpers_fix_gitignore` management command — idempotent, append-only
+  one-shot way to add the dev-helpers dotfile names to `.gitignore`. Use
+  it when you see the "missing entries from .gitignore" warning and you
+  don't want to flip `gitignore.mode = "auto-add"` globally. `--dry-run`
+  previews changes without writing. Documented in
+  `docs/configuration.md#gitignore`.
+- Banner and AGENTS.md / CLAUDE.md static block are now **engine-aware**:
+  SQLite-backed projects see a `SQLite` section with the database file
+  path and the `sqlite3` invocation; PostgreSQL-only / Redis-less projects
+  see only the sections that apply. The previous one-size-fits-all
+  template advertised PostgreSQL + Redis even when those services were
+  not part of the stack.
+- `lookup.source = "sidecar"` and inclusion of the run-site
+  `.run-site-config` TOML file in the `auto` lookup chain. Order is now:
+  callable → env → sidecar → settings.
 - `lookup.callable = "module:attr"` — full primary endpoint resolver,
   pluggable per project.
-- `DEV_HELPERS_AUTOLOGIN_USERNAME` env var picked up as the autologin user
-  when `autologin.user_lookup_value` is not set explicitly.
+- `DEV_HELPERS_AUTOLOGIN_USERNAME` env var picked up as the autologin
+  user when `autologin.user_lookup_value` is not set explicitly.
 - Config validation in `conf.py` — unknown keys, invalid `gitignore.mode`,
   invalid `lookup.source`, malformed `extra_cookies`, etc. raise
   `ImproperlyConfigured` at app load.
@@ -27,7 +43,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   for token autoreload behavior.
 
 ### Changed
-- Autologin view now restricted to `GET` (`@require_http_methods(["GET"])`).
+- Autologin view now restricted to `GET`
+  (`@require_http_methods(["GET"])`).
 - Agent help prompt `shlex.quote`-s the DB user/password/name so passwords
   containing quotes/spaces survive the shell snippet.
 - SIGTERM cleanup chains to the previously-installed handler instead of
@@ -45,6 +62,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `print(stderr)`.
 
 ### Fixed
+- `prompt.render_template` no longer raises
+  `TypeError: expected string or bytes-like object, got 'PosixPath'`
+  when `DATABASES['default']['NAME']` is a `pathlib.Path` (the standard
+  SQLite shape, `BASE_DIR / "db.sqlite3"`). DB string fields read from
+  settings are now coerced to `str` before being passed to
+  `shlex.quote` / `.format()`.
+- `prompt.render_template` no longer produces
+  `Server is up at: http://localhost:None` when `discover_port` returns
+  `None` (e.g. `manage.py run_site` rendering the suggestion block
+  before the dev server has started). The line now falls back to
+  `http://{host}:$PORT (read $PORT from the dotfile below)`, which is
+  copy-paste-correct under shell expansion.
+- `manage.py run_site` now suggests `render_static_agent_help_block`
+  (the dotfile-referencing version with paired markers) instead of the
+  runtime banner. Pasting the static block into AGENTS.md / CLAUDE.md
+  doesn't go stale across restarts that pick a different free port.
 - `pyproject.toml` `pythonpath` now includes the repo root so `pytest`
   works without a manual `PYTHONPATH=.`.
 - `pyproject.toml` `[dev]` extras now include `ruff` and `mypy` so CI

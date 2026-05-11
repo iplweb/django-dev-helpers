@@ -161,12 +161,16 @@ def _resolve_via_settings() -> dict:
             info["pg_port"] = int(db["PORT"])
         except (TypeError, ValueError):
             logger.warning("django-dev-helpers: DATABASES['default']['PORT']=%r is not an int", db.get("PORT"))
+    # Coerce DB string fields to ``str`` because Django allows non-string
+    # types here in practice — most notably SQLite's ``NAME`` is usually a
+    # ``pathlib.Path`` (``BASE_DIR / "db.sqlite3"``). Downstream consumers
+    # (``shlex.quote``, ``str.format``) require real strings.
     if db.get("USER"):
-        info["db_user"] = db["USER"]
+        info["db_user"] = str(db["USER"])
     if db.get("PASSWORD"):
-        info["db_password"] = db["PASSWORD"]
+        info["db_password"] = str(db["PASSWORD"])
     if db.get("NAME"):
-        info["db_name"] = db["NAME"]
+        info["db_name"] = str(db["NAME"])
 
     try:
         from django.conf import settings

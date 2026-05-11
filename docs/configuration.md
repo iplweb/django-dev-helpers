@@ -74,6 +74,45 @@ set.
 | `mode` | str | `"warn"` | One of `warn`, `auto-add`, `error`, `off`. Other values raise `ImproperlyConfigured`. |
 | `path` | str \| None | `None` | Path to the `.gitignore` to inspect. `None` = `<project_root>/.gitignore`. |
 
+Modes (applied on every `runserver` startup when a `.git` directory is
+present):
+
+- `warn` — log a warning listing each missing dotfile entry. Default.
+- `auto-add` — append the missing entries to `.gitignore` automatically
+  during startup. Useful in CI / fresh-clone flows.
+- `error` — fail server startup until the entries are in place.
+- `off` — skip the check entirely.
+
+### Adding the entries manually (`dev_helpers_fix_gitignore`)
+
+When `mode = "warn"` (the default) and you've seen the warning, you can
+fix `.gitignore` once with a dedicated management command — no need to
+flip the mode to `auto-add` and restart:
+
+```bash
+python manage.py dev_helpers_fix_gitignore
+# Added 6 entries to /path/to/.gitignore:
+#   + .dev_helpers_token
+#   + .dev_helpers_port
+#   + .dev_helpers_pg_host
+#   + .dev_helpers_pg_port
+#   + .dev_helpers_redis_host
+#   + .dev_helpers_redis_port
+```
+
+The command is **idempotent** (entries already present are left alone)
+and **append-only** (existing `.gitignore` content is never rewritten
+or reordered — your custom rules stay where you put them). It creates
+`.gitignore` if it doesn't exist. Use `--dry-run` to preview without
+writing:
+
+```bash
+python manage.py dev_helpers_fix_gitignore --dry-run
+```
+
+`dev_helpers_check_gitignore` is the read-only companion: it reports
+missing entries and exits non-zero, suitable for pre-commit / CI gates.
+
 ## `lookup`
 
 | Key | Type | Default | Notes |

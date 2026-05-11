@@ -60,10 +60,18 @@ class Command(BaseCommand):
 
         target_label = " or ".join(existing or files)
 
+        # Use the *static* block (dotfile-referencing) rather than the
+        # runtime banner. The static version is what should actually land
+        # in AGENTS.md / CLAUDE.md: it sources port and endpoints from
+        # ``$(cat .dev_helpers_*)`` so it does not go stale when the next
+        # run picks a different free port. It also already includes the
+        # paired markers — no manual marker line needed.
         try:
-            rendered = prompt.render_template(cfg)
+            rendered = prompt.render_static_agent_help_block(cfg)
         except Exception:
-            logger.exception("django-dev-helpers: failed to render agent prompt for run_site suggestion")
+            logger.exception(
+                "django-dev-helpers: failed to render agent prompt for run_site suggestion"
+            )
             return
 
         self.stderr.write(
@@ -74,13 +82,12 @@ class Command(BaseCommand):
             )
         )
         self.stderr.write("--- 8< -------------------------------------------------------------")
-        self.stderr.write(marker)
-        self.stderr.write("```")
         self.stderr.write(rendered)
-        self.stderr.write("```")
         self.stderr.write("--- >8 -------------------------------------------------------------")
         self.stderr.write(
-            self.style.NOTICE("Silence globally with: DJANGO_DEV_HELPERS = {'claude_md': {'mode': 'off'}}.\n")
+            self.style.NOTICE(
+                "Silence globally with: DJANGO_DEV_HELPERS = {'claude_md': {'mode': 'off'}}.\n"
+            )
         )
 
 

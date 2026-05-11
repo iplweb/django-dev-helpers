@@ -55,6 +55,10 @@ That's the whole setup.
    `.dev_helpers_port`, `.dev_helpers_pg_host`, `.dev_helpers_pg_port`,
    `.dev_helpers_redis_host`, `.dev_helpers_redis_port`.
 3. `.gitignore` is checked for those entries (warn-mode by default).
+   If you see a warning about missing entries, fix it in one shot:
+   `python manage.py dev_helpers_fix_gitignore` (idempotent, append-only).
+   See [configuration.md#gitignore](configuration.md#gitignore) for the
+   other modes (`auto-add`, `error`, `off`).
 4. After the first request the agent help is printed to stdout.
 5. The browser opens at the autologin URL once the server is reachable.
 

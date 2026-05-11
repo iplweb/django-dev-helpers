@@ -78,8 +78,16 @@ curl -L "http://localhost:8000/__autologin__/?token=$T"
 ```bash
 python manage.py dev_helpers_doctor          # Full diagnostic
 python manage.py dev_helpers_print_help      # Print agent prompt
-python manage.py dev_helpers_check_gitignore # Check .gitignore entries
+python manage.py dev_helpers_check_gitignore # Check .gitignore entries (read-only)
+python manage.py dev_helpers_fix_gitignore   # Add missing .gitignore entries (idempotent)
 ```
+
+`dev_helpers_fix_gitignore` is the one you want when you see the
+*"missing entries from .gitignore"* warning on startup — it appends the
+missing dotfile names (and only those) without reordering existing
+rules. Pass `--dry-run` to preview. See
+[docs/configuration.md#gitignore](docs/configuration.md#gitignore) for
+the full contract.
 
 ## Documentation
 

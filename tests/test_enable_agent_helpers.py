@@ -34,8 +34,32 @@ def _call(*args, settings_override=None, stdin_text=None):
 
 
 def test_creates_agents_md_when_neither_exists_non_interactive(project_dir):
-    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}
-    out, _ = _call("--non-interactive", settings_override=overrides)
+    # Force a Postgres + Redis-backed project so the generated block
+    # exercises every dotfile filename. Sqlite-only / no-redis projects
+    # legitimately omit those sections (covered by separate tests).
+    overrides = {
+        "enabled": True,
+        "lookup": {"source": "settings"},
+        "dotfiles": {"directory": str(project_dir)},
+    }
+    databases = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "HOST": "127.0.0.1",
+            "PORT": "5432",
+            "NAME": "demo",
+            "USER": "demo",
+            "PASSWORD": "demo-pwd",
+        }
+    }
+    caches = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.redis.RedisCache",
+            "LOCATION": "redis://127.0.0.1:6379/0",
+        }
+    }
+    with override_settings(DATABASES=databases, CACHES=caches):
+        out, _ = _call("--non-interactive", settings_override=overrides)
     assert (project_dir / "AGENTS.md").is_file()
     assert not (project_dir / "CLAUDE.md").exists()
     assert "Created AGENTS.md" in out
