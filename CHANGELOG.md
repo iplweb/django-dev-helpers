@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] — 2026-05-11
+
+### Fixed
+- `run_site` management command now auto-injects `--manage-py <abs path>`
+  into the forwarded `run-site run` arguments when invoked through a
+  specific `manage.py` (e.g. `python example_grappelli/manage.py run_site`).
+  Previously, projects shipping multiple example/manage.py files would
+  error out with `Multiple Django manage.py files found … Pass --manage-py
+  or set 'manage_py' in runsite.toml to disambiguate.` even though the
+  user had already picked one by invoking it. The injection is skipped
+  when `--manage-py` (or `--manage-py=…`) is already in the forwarded
+  args, or when `sys.argv[0]` does not look like a `manage.py`
+  (e.g. `django-admin`).
+
 ## [0.1.3] — 2026-05-11
 
 This release rolls up the post-0.1.2 work that had been accumulating

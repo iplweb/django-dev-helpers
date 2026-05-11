@@ -47,6 +47,79 @@ def test_no_args_invokes_run_site_run(project_dir):
     spawn.assert_called_once_with(["run"])
 
 
+def test_injects_manage_py_when_invoked_via_manage_py(project_dir, tmp_path):
+    manage_py = tmp_path / "example_grappelli" / "manage.py"
+    manage_py.parent.mkdir()
+    manage_py.write_text("# fake manage.py\n", encoding="utf-8")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}
+    with (
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+        patch("django_dev_helpers.management.commands.run_site.sys.argv", [str(manage_py), "run_site"]),
+    ):
+        _call(settings_override=overrides)
+    spawn.assert_called_once_with(["run", "--manage-py", str(manage_py.resolve())])
+
+
+def test_injects_manage_py_before_forwarded_args(project_dir, tmp_path):
+    manage_py = tmp_path / "example" / "manage.py"
+    manage_py.parent.mkdir()
+    manage_py.write_text("# fake manage.py\n", encoding="utf-8")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}
+    with (
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+        patch("django_dev_helpers.management.commands.run_site.sys.argv", [str(manage_py), "run_site"]),
+    ):
+        _call("--", "--port", "9000", settings_override=overrides)
+    spawn.assert_called_once_with(["run", "--manage-py", str(manage_py.resolve()), "--port", "9000"])
+
+
+def test_does_not_inject_manage_py_when_user_already_passed_it(project_dir, tmp_path):
+    invoking = tmp_path / "example" / "manage.py"
+    invoking.parent.mkdir()
+    invoking.write_text("# fake manage.py\n", encoding="utf-8")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}
+    with (
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+        patch("django_dev_helpers.management.commands.run_site.sys.argv", [str(invoking), "run_site"]),
+    ):
+        _call("--", "--manage-py", "/somewhere/else/manage.py", settings_override=overrides)
+    spawn.assert_called_once_with(["run", "--manage-py", "/somewhere/else/manage.py"])
+
+
+def test_does_not_inject_manage_py_with_equals_form(project_dir, tmp_path):
+    invoking = tmp_path / "example" / "manage.py"
+    invoking.parent.mkdir()
+    invoking.write_text("# fake manage.py\n", encoding="utf-8")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}
+    with (
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+        patch("django_dev_helpers.management.commands.run_site.sys.argv", [str(invoking), "run_site"]),
+    ):
+        _call("--", "--manage-py=/other/manage.py", settings_override=overrides)
+    spawn.assert_called_once_with(["run", "--manage-py=/other/manage.py"])
+
+
+def test_does_not_inject_when_sys_argv_is_not_manage_py(project_dir):
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}
+    with (
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+        patch("django_dev_helpers.management.commands.run_site.sys.argv", ["/usr/local/bin/django-admin", "run_site"]),
+    ):
+        _call(settings_override=overrides)
+    spawn.assert_called_once_with(["run"])
+
+
+def test_does_not_inject_when_manage_py_file_missing(project_dir, tmp_path):
+    missing = tmp_path / "nope" / "manage.py"
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}
+    with (
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+        patch("django_dev_helpers.management.commands.run_site.sys.argv", [str(missing), "run_site"]),
+    ):
+        _call(settings_override=overrides)
+    spawn.assert_called_once_with(["run"])
+
+
 def test_claude_md_suggestion_emitted_when_marker_missing(project_dir):
     (project_dir / "CLAUDE.md").write_text("# Project notes\n\nSome content.\n", encoding="utf-8")
     overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}}

@@ -32,6 +32,14 @@ class Command(BaseCommand):
 
         self._maybe_suggest_agent_help_block(cfg)
 
+        # When invoked through a specific manage.py (e.g. `python
+        # example_grappelli/manage.py run_site`), tell run-site to use that
+        # exact manage.py rather than re-discovering and failing on projects
+        # that ship multiple manage.py files.
+        manage_py = _detect_invoking_manage_py()
+        if manage_py and not _forwarded_has_arg(forwarded, "--manage-py"):
+            forwarded = ["--manage-py", manage_py, *forwarded]
+
         spawn_run_site(["run", *forwarded])
 
     def _maybe_suggest_agent_help_block(self, cfg) -> None:
@@ -69,9 +77,7 @@ class Command(BaseCommand):
         try:
             rendered = prompt.render_static_agent_help_block(cfg)
         except Exception:
-            logger.exception(
-                "django-dev-helpers: failed to render agent prompt for run_site suggestion"
-            )
+            logger.exception("django-dev-helpers: failed to render agent prompt for run_site suggestion")
             return
 
         self.stderr.write(
@@ -85,9 +91,7 @@ class Command(BaseCommand):
         self.stderr.write(rendered)
         self.stderr.write("--- >8 -------------------------------------------------------------")
         self.stderr.write(
-            self.style.NOTICE(
-                "Silence globally with: DJANGO_DEV_HELPERS = {'claude_md': {'mode': 'off'}}.\n"
-            )
+            self.style.NOTICE("Silence globally with: DJANGO_DEV_HELPERS = {'claude_md': {'mode': 'off'}}.\n")
         )
 
 
@@ -105,3 +109,20 @@ def spawn_run_site(argv: list[str]) -> None:
         )
     os.execvp(binary, [binary, *argv])
     sys.exit(0)
+
+
+def _detect_invoking_manage_py() -> str | None:
+    """Return the absolute path of the manage.py used to invoke us, or None."""
+    script = sys.argv[0] if sys.argv else ""
+    if not script or os.path.basename(script) != "manage.py":
+        return None
+    abspath = os.path.abspath(script)
+    if not os.path.isfile(abspath):
+        return None
+    return abspath
+
+
+def _forwarded_has_arg(argv: list[str], name: str) -> bool:
+    """Return True if ``name`` or ``name=...`` is already present in argv."""
+    prefix = f"{name}="
+    return any(a == name or a.startswith(prefix) for a in argv)
