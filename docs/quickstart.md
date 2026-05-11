@@ -33,7 +33,15 @@ DJANGO_DEV_HELPERS = {"enabled": True}
 DJANGO_DEV_HELPERS_ENABLED=1 python manage.py runserver
 ```
 
-In your project `urls.py`:
+That's the whole setup — no `urls.py` changes are needed. On startup the
+package auto-appends `django_dev_helpers.middleware.AutologinMiddleware` to
+your `MIDDLEWARE` list, so the autologin URL works out of the box. The
+middleware refuses to load when `DEBUG=False`, so an accidental production
+deploy still can't expose the login backdoor.
+
+If you'd rather wire the URL by hand (mount it under a prefix, etc.), set
+`{"autologin": {"middleware_autoinstall": False}}` and add the pattern to
+your `urls.py`:
 
 ```python
 from django_dev_helpers.urls import autologin_urlpatterns
@@ -45,22 +53,26 @@ urlpatterns = [
 ]
 ```
 
-That's the whole setup.
-
 ## What happens on `runserver`
 
 1. AppConfig generates an autologin token (or reuses one in
    `DEV_HELPERS_AUTOLOGIN_TOKEN`).
-2. Dotfiles are written to the project root: `.dev_helpers_token`,
+2. `AutologinMiddleware` is appended to `settings.MIDDLEWARE` so the
+   autologin URL works without `urls.py` changes. Toggle off with
+   `{"autologin": {"middleware_autoinstall": False}}`.
+3. Dotfiles are written to the project root: `.dev_helpers_token`,
    `.dev_helpers_port`, `.dev_helpers_pg_host`, `.dev_helpers_pg_port`,
    `.dev_helpers_redis_host`, `.dev_helpers_redis_port`.
-3. `.gitignore` is checked for those entries (warn-mode by default).
+4. `.gitignore` is checked for those entries (warn-mode by default).
    If you see a warning about missing entries, fix it in one shot:
    `python manage.py dev_helpers_fix_gitignore` (idempotent, append-only).
    See [configuration.md#gitignore](configuration.md#gitignore) for the
    other modes (`auto-add`, `error`, `off`).
-4. After the first request the agent help is printed to stdout.
-5. The browser opens at the autologin URL once the server is reachable.
+5. After the first request the agent help is printed to stdout.
+6. The browser opens at the autologin URL once the server is reachable.
+   If the autologin URL still returns 404 (e.g. you disabled both the
+   middleware auto-install and the URL include), the browser-open code
+   prints a banner explaining how to wire it and opens `/` instead.
 
 ## Verify
 

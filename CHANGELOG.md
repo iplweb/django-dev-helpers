@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] — 2026-05-11
+
+### Added
+- New `django_dev_helpers.middleware.AutologinMiddleware` that intercepts
+  the autologin URL before URL resolution. With this in place the autologin
+  endpoint works without any `urls.py` changes -- projects that have
+  `django_dev_helpers` in `INSTALLED_APPS` are fully set up.
+- New config flag `autologin.middleware_autoinstall` (default `True`):
+  the package now auto-appends `AutologinMiddleware` to
+  `settings.MIDDLEWARE` during `AppConfig.ready()`. The entry is appended
+  at the end so `SessionMiddleware`, `AuthenticationMiddleware`, and
+  `MessageMiddleware` get to set up the request state the view depends on
+  (especially `request._messages`, used by `flash_message`). Set the flag
+  to `False` to keep the middleware out of `MIDDLEWARE` and continue
+  wiring the URL pattern manually with `autologin_urlpatterns()`.
+- `AutologinMiddleware.__init__` raises `ImproperlyConfigured` when
+  `settings.DEBUG=False`. Defense in depth: if the dev `MIDDLEWARE` list
+  ever ends up in a non-dev deployment, the process fails to start rather
+  than silently exposing the token-gated login backdoor.
+
+### Changed
+- README, `docs/quickstart.md`, `docs/autologin.md`, `docs/configuration.md`,
+  and `docs/security.md` updated to reflect the zero-config setup and the
+  new middleware path.
+- The "autologin URL returned 404" banner (introduced in 0.1.5) now lists
+  all three failure modes (app not in `INSTALLED_APPS`, auto-install
+  disabled, autologin disabled) so the user can pick the relevant fix.
+- pytest configuration: `django_debug_mode = "keep"` so tests run with
+  `DEBUG=True` (matching real-world usage; required for the middleware to
+  load).
+
 ## [0.1.5] — 2026-05-11
 
 ### Added

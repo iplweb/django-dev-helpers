@@ -102,10 +102,7 @@ def _build_postgres_section(
 
     if show_creds and db_password:
         quoted_password = shlex.quote(db_password)
-        pg_command = (
-            f'PGPASSWORD={quoted_password} psql -h "$PG_HOST" -p "$PG_PORT" '
-            f"-U {quoted_user} -d {quoted_name}"
-        )
+        pg_command = f'PGPASSWORD={quoted_password} psql -h "$PG_HOST" -p "$PG_PORT" -U {quoted_user} -d {quoted_name}'
     else:
         pg_command = (
             f'psql -h "$PG_HOST" -p "$PG_PORT"'
@@ -200,10 +197,7 @@ def _build_default_prompt(
         f'  T=$(cat "{token_path}")',
         f'  PORT=$(cat "{port_path}")',
         "  J=$(mktemp)",
-        (
-            f'  curl -sc "$J" -L "http://{host}:$PORT/{autologin_path}'
-            '?token=$T" >/dev/null'
-        ),
+        (f'  curl -sc "$J" -L "http://{host}:$PORT/{autologin_path}?token=$T" >/dev/null'),
         f'  curl -sb "$J" "http://{host}:$PORT/<path>"',
         '  rm "$J"',
     ]
@@ -266,8 +260,7 @@ def render_template(cfg) -> str:
     if show_creds and db_password:
         quoted_password = shlex.quote(db_password)
         pg_command_with_or_without_password = (
-            f'PGPASSWORD={quoted_password} psql -h "$PG_HOST" -p "$PG_PORT" '
-            f"-U {quoted_user} -d {quoted_name}"
+            f'PGPASSWORD={quoted_password} psql -h "$PG_HOST" -p "$PG_PORT" -U {quoted_user} -d {quoted_name}'
         )
     else:
         pg_command_with_or_without_password = (

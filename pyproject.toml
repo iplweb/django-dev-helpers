@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "django-dev-helpers"
-version = "0.1.5"
+version = "0.1.6"
 description = "Dev-time conveniences for Django projects: autologin endpoint, dotfiles for LLM agents, gitignore self-check"
 readme = "README.md"
 license = "MIT"
@@ -50,6 +50,11 @@ packages = ["src/django_dev_helpers"]
 
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
+# Keep DEBUG=True from tests/settings.py instead of pytest-django's default
+# DEBUG=False override. This package only runs with DEBUG=True (the
+# AutologinMiddleware refuses to load otherwise), so tests must mirror the
+# real-world configuration.
+django_debug_mode = "keep"
 pythonpath = [".", "src"]
 testpaths = ["tests"]
 addopts = "-p no:cacheprovider"

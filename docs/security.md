@@ -77,6 +77,25 @@ The view itself still calls `cfg.refuse_if_inactive()` at request time, so
 toggling the flag still 404s the endpoint — the URL just remains routed
 until restart.
 
+## AutologinMiddleware
+
+When `autologin.middleware_autoinstall=True` (the default), the package
+appends `django_dev_helpers.middleware.AutologinMiddleware` to
+`settings.MIDDLEWARE` during `AppConfig.ready()`. The middleware checks
+`request.path` against the configured autologin path on every request; for
+non-matching paths it calls `get_response(request)` and exits. For the
+matching path it delegates to the view, which performs the same set of
+checks documented above (token compare, host allowlist, user lookup,
+inactive guard).
+
+The middleware's `__init__` raises `ImproperlyConfigured` when
+`settings.DEBUG=False`. This is a fail-loud-and-early defense: even if
+someone copies the dev `MIDDLEWARE` list into a production-style
+configuration, the process refuses to start rather than expose the
+token-gated login backdoor. To opt out of the auto-install entirely, set
+`autologin.middleware_autoinstall=False` and either wire
+`autologin_urlpatterns()` in your URLconf or add the middleware manually.
+
 ## Sanity warnings (informational)
 
 These don't block startup, just emit `RuntimeWarning`:
@@ -89,7 +108,6 @@ These don't block startup, just emit `RuntimeWarning`:
 
 ## What the package never does
 
-- It never installs middleware that touches every request.
 - It never logs the token to stdout.
 - It never reads request bodies for autologin — token is query-string-only,
   GET-only.

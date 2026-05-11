@@ -15,10 +15,7 @@ class Command(BaseCommand):
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help=(
-                "Report which entries would be added and exit. "
-                "Does not modify .gitignore."
-            ),
+            help=("Report which entries would be added and exit. Does not modify .gitignore."),
         )
 
     def handle(self, *args, **options):
@@ -35,9 +32,7 @@ class Command(BaseCommand):
 
         if not missing:
             target = gitignore_path if gitignore_path.exists() else f"{gitignore_path} (new)"
-            self.stdout.write(
-                f"All dev-helpers dotfile entries already present in {target}."
-            )
+            self.stdout.write(f"All dev-helpers dotfile entries already present in {target}.")
             return
 
         if options["dry_run"]:

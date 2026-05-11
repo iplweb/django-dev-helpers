@@ -171,9 +171,7 @@ def test_discover_port_falls_back_to_sidecar(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "argv", ["run-site", "run"])
     _write_min_sidecar(tmp_path, port=65359)
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
-    ):
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}):
         from django_dev_helpers.conf import DevHelpersConfig, reset_config
         from django_dev_helpers.dotfiles import discover_port
 
@@ -188,9 +186,7 @@ def test_discover_bind_host_falls_back_to_sidecar(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "argv", ["run-site", "run"])
     _write_min_sidecar(tmp_path, host="example.local")
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
-    ):
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}):
         from django_dev_helpers.conf import DevHelpersConfig, reset_config
         from django_dev_helpers.dotfiles import discover_bind_host
 
@@ -206,9 +202,7 @@ def test_discover_port_env_beats_sidecar(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "argv", ["run-site", "run"])
     _write_min_sidecar(tmp_path, port=65359)
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
-    ):
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}):
         from django_dev_helpers.conf import DevHelpersConfig, reset_config
         from django_dev_helpers.dotfiles import discover_port
 
@@ -225,9 +219,7 @@ def test_discover_port_argv_beats_sidecar(monkeypatch, tmp_path):
     monkeypatch.setattr(sys, "argv", ["manage.py", "runserver", "9000"])
     _write_min_sidecar(tmp_path, port=65359)
 
-    with override_settings(
-        DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}
-    ):
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True, "dotfiles": {"directory": str(tmp_path)}}):
         from django_dev_helpers.conf import DevHelpersConfig, reset_config
         from django_dev_helpers.dotfiles import discover_port
 

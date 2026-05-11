@@ -1,3 +1,4 @@
+import logging
 import os
 import sys
 
@@ -8,6 +9,43 @@ from django.apps import AppConfig
 # Set after each one-shot side effect to avoid retriggering on reload.
 _BROWSER_SENTINEL = "DEV_HELPERS_BROWSER_OPENED"
 _HELP_SENTINEL = "DEV_HELPERS_HELP_PRINTED"
+
+_AUTOLOGIN_MIDDLEWARE = "django_dev_helpers.middleware.AutologinMiddleware"
+
+logger = logging.getLogger(__name__)
+
+
+def install_autologin_middleware_if_enabled(cfg) -> None:
+    """Append ``AutologinMiddleware`` to ``settings.MIDDLEWARE`` if the
+    user hasn't already added it.
+
+    Lets the autologin endpoint work in projects that haven't wired
+    ``*autologin_urlpatterns()`` into their ``urls.py``. Gated by the
+    ``autologin.middleware_autoinstall`` config flag (default True).
+
+    The entry is appended at the end so every preceding middleware
+    (``SessionMiddleware``, ``AuthenticationMiddleware``, and especially
+    ``MessageMiddleware``) gets to set up the request state that the
+    autologin view depends on -- in particular, ``request._messages``,
+    which the view writes to when ``autologin.flash_message`` is
+    configured. ``settings.MIDDLEWARE`` can be a list or tuple; we
+    normalize to a list before mutating.
+    """
+    if not cfg.autologin.enabled:
+        return
+    if not cfg.autologin.middleware_autoinstall:
+        return
+
+    from django.conf import settings
+
+    raw = getattr(settings, "MIDDLEWARE", None) or []
+    middleware = list(raw)
+    if _AUTOLOGIN_MIDDLEWARE in middleware:
+        return
+
+    middleware.append(_AUTOLOGIN_MIDDLEWARE)
+    settings.MIDDLEWARE = middleware
+    logger.debug("django-dev-helpers: auto-installed %s", _AUTOLOGIN_MIDDLEWARE)
 
 
 class DjangoDevHelpersConfig(AppConfig):
@@ -36,6 +74,8 @@ class DjangoDevHelpersConfig(AppConfig):
             return
         if is_autoreload_parent and "runserver" in sys.argv:
             return
+
+        install_autologin_middleware_if_enabled(cfg)
 
         if cfg.dotfiles.enabled:
             from .dotfiles import register_cleanup, write_all_dotfiles

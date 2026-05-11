@@ -3,7 +3,33 @@
 A single `GET` URL that logs in a configured user when the request supplies the
 right token, then redirects.
 
-## URL contract
+## How it gets mounted
+
+There are **two** ways for the autologin URL to reach the view. You don't need
+to do both — pick one.
+
+### 1. Auto-installed middleware (default, zero config)
+
+Adding `django_dev_helpers` to `INSTALLED_APPS` is enough. On startup the
+package appends `django_dev_helpers.middleware.AutologinMiddleware` to your
+`MIDDLEWARE` list (if not already present), and the middleware intercepts
+requests to the configured autologin path before URL resolution. No changes
+to your `urls.py` are required.
+
+Disable the auto-install with:
+
+```python
+DJANGO_DEV_HELPERS = {
+    "autologin": {"middleware_autoinstall": False},
+}
+```
+
+The middleware refuses to load when `settings.DEBUG=False` — it raises
+`ImproperlyConfigured` at startup. This is defense in depth: even if someone
+ships the middleware in a non-dev `MIDDLEWARE`, the process fails to start
+rather than expose the token-gated login backdoor.
+
+### 2. Manual URL include
 
 `autologin_urlpatterns()` returns a list of one URL pattern when the package is
 active and `autologin.enabled=True`. When inactive, it returns `[]` so the URL
@@ -19,7 +45,28 @@ urlpatterns = [
 ```
 
 The URL pattern is built once when Django imports your URLconf. If you toggle
-`enabled` after that, the URLconf is already cached — restart Django.
+`enabled` after that, the URLconf is already cached — restart Django. The
+manual include is useful when you want the URL prefixed (e.g. mounted under
+`path("dev/", include(...))`) or when `middleware_autoinstall=False`.
+
+### Manual middleware install
+
+If you want the middleware path but prefer explicit control, set
+`middleware_autoinstall=False` and add the entry yourself:
+
+```python
+MIDDLEWARE = [
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    # ...
+    "django_dev_helpers.middleware.AutologinMiddleware",
+]
+```
+
+Place it **after** `SessionMiddleware`, `AuthenticationMiddleware`, and
+`MessageMiddleware` — the view writes to `request._messages` when
+`flash_message` is configured, so those have to be in place first.
 
 ## Token
 

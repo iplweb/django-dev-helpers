@@ -59,25 +59,39 @@ def _probe_autologin_status(cfg, host: str, port: str) -> int | None:
 
 
 def _print_autologin_not_wired_banner(cfg, host: str, port: str) -> None:
-    """Tell the user (and any watching coding agent) how to wire the URL."""
+    """Tell the user (and any watching coding agent) how to wire the URL.
+
+    Reached when the HEAD-probe to the autologin URL returns 404. With the
+    default ``middleware_autoinstall=True`` this should normally never fire,
+    so the banner walks the user through the most likely causes (auto-install
+    disabled, app config missing, etc.) instead of just repeating one fix.
+    """
     autologin_path = cfg.autologin.url_path.lstrip("/")
     message = (
         "\n"
         "─── django-dev-helpers ───────────────────────────────────────────────\n"
         f"  Autologin endpoint /{autologin_path} returned 404.\n"
-        "  The autologin URL is not wired into your project's URLconf.\n"
+        "  The autologin URL is not reachable -- check one of these:\n"
         "\n"
-        "  To enable it, add this to your project's urls.py:\n"
+        "  1. Make sure 'django_dev_helpers' is in INSTALLED_APPS. The package\n"
+        "     auto-installs its middleware on app startup; if the app isn't\n"
+        "     loaded, the middleware never runs.\n"
         "\n"
-        "      from django_dev_helpers.urls import autologin_urlpatterns\n"
+        "  2. If you set autologin.middleware_autoinstall=False, you must\n"
+        "     either install the middleware manually:\n"
         "\n"
-        "      urlpatterns = [\n"
-        "          ...\n"
-        "          *autologin_urlpatterns(),\n"
-        "      ]\n"
+        "        MIDDLEWARE = [\n"
+        "            ...,\n"
+        "            'django_dev_helpers.middleware.AutologinMiddleware',\n"
+        "        ]\n"
         "\n"
-        "  Or disable autologin entirely in settings.py:\n"
-        "      DJANGO_DEV_HELPERS = {'autologin': {'enabled': False}}\n"
+        "     ...or wire the URL pattern explicitly in your project urls.py:\n"
+        "\n"
+        "        from django_dev_helpers.urls import autologin_urlpatterns\n"
+        "        urlpatterns = [..., *autologin_urlpatterns()]\n"
+        "\n"
+        "  3. To disable autologin entirely:\n"
+        "        DJANGO_DEV_HELPERS = {'autologin': {'enabled': False}}\n"
         "\n"
         f"  Opening http://{host}:{port}/ instead of the autologin URL.\n"
         "──────────────────────────────────────────────────────────────────────\n"

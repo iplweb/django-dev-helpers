@@ -20,6 +20,7 @@ _AUTOLOGIN_DEFAULTS: dict[str, Any] = {
     "flash_message": "",
     "extra_cookies": [],
     "allowed_hosts": [],
+    "middleware_autoinstall": True,
 }
 
 _DOTFILES_DEFAULTS: dict[str, Any] = {
@@ -138,6 +139,9 @@ def _validate(merged: dict[str, Any], raw: dict[str, Any]) -> None:
     allowed = merged["autologin"]["allowed_hosts"]
     if not isinstance(allowed, (list, tuple)):
         raise ImproperlyConfigured("DJANGO_DEV_HELPERS['autologin']['allowed_hosts'] must be a list of strings.")
+
+    if not isinstance(merged["autologin"]["middleware_autoinstall"], bool):
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['autologin']['middleware_autoinstall'] must be a bool.")
 
     non_serving = merged["safety"]["non_serving_commands"]
     if not isinstance(non_serving, (list, tuple, set, frozenset)):

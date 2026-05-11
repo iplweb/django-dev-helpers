@@ -46,7 +46,18 @@ Or via environment variable:
 DJANGO_DEV_HELPERS_ENABLED=1 python manage.py runserver
 ```
 
-3. Add URL patterns in your `urls.py`:
+That's it — autologin is wired automatically. On startup, the package will:
+- Generate an autologin token
+- Auto-install `AutologinMiddleware` into `MIDDLEWARE` so the autologin URL works
+  without `urls.py` changes (refuses to load if `DEBUG=False`)
+- Write dotfiles to your project root
+- Check `.gitignore`
+- Print agent help after first request
+- Open browser at the autologin URL (falls back to `/` with a banner if the URL
+  is somehow not wired)
+
+If you'd rather wire the URL by hand (e.g. to mount it under a prefix), set
+`{"autologin": {"middleware_autoinstall": False}}` and add to `urls.py`:
 
 ```python
 from django_dev_helpers.urls import autologin_urlpatterns
@@ -56,13 +67,6 @@ urlpatterns = [
     # ... your other URLs
 ]
 ```
-
-That's it. On startup, the package will:
-- Generate an autologin token
-- Write dotfiles to your project root
-- Check `.gitignore`
-- Print agent help after first request
-- Open browser with autologin URL
 
 ## Usage
 
