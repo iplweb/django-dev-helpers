@@ -32,16 +32,77 @@ def _build_autologin_url(cfg, host: str, port: str) -> str:
     return f"http://{host}:{port}/{cfg.autologin.url_path}?token={token}"
 
 
+def _probe_autologin_status(cfg, host: str, port: str) -> int | None:
+    """HEAD-probe the autologin URL and return its HTTP status.
+
+    HEAD is used because the autologin view is restricted to GET via
+    ``@require_http_methods(["GET"])``: a *wired* URL responds with 405
+    (method not allowed), while an *unmounted* URL bubbles up as 404 from
+    Django's URL resolver. The 404-vs-not-404 split is therefore a reliable
+    "is autologin wired?" signal, and HEAD avoids triggering the real login
+    side effect (session creation, ``last_login`` update, audit log entry).
+
+    Returns the HTTP status code, or ``None`` on connection error (e.g.
+    server not actually up yet -- in which case we want to leave the URL
+    decision as-is rather than show a false-positive banner).
+    """
+    path = cfg.autologin.url_path.lstrip("/")
+    url = f"http://{host}:{port}/{path}"
+    request = urllib.request.Request(url, method="HEAD")
+    try:
+        response = urllib.request.urlopen(request, timeout=2)
+        return response.status
+    except urllib.error.HTTPError as exc:
+        return exc.code
+    except (urllib.error.URLError, ConnectionError, TimeoutError, OSError):
+        return None
+
+
+def _print_autologin_not_wired_banner(cfg, host: str, port: str) -> None:
+    """Tell the user (and any watching coding agent) how to wire the URL."""
+    autologin_path = cfg.autologin.url_path.lstrip("/")
+    message = (
+        "\n"
+        "─── django-dev-helpers ───────────────────────────────────────────────\n"
+        f"  Autologin endpoint /{autologin_path} returned 404.\n"
+        "  The autologin URL is not wired into your project's URLconf.\n"
+        "\n"
+        "  To enable it, add this to your project's urls.py:\n"
+        "\n"
+        "      from django_dev_helpers.urls import autologin_urlpatterns\n"
+        "\n"
+        "      urlpatterns = [\n"
+        "          ...\n"
+        "          *autologin_urlpatterns(),\n"
+        "      ]\n"
+        "\n"
+        "  Or disable autologin entirely in settings.py:\n"
+        "      DJANGO_DEV_HELPERS = {'autologin': {'enabled': False}}\n"
+        "\n"
+        f"  Opening http://{host}:{port}/ instead of the autologin URL.\n"
+        "──────────────────────────────────────────────────────────────────────\n"
+    )
+    sys.stderr.write(message)
+    sys.stderr.flush()
+
+
 def open_browser(cfg) -> None:
     host = dotfiles.discover_bind_host(cfg)
     if host in ("0.0.0.0", ""):
         host = "localhost"
     port = dotfiles.discover_port(cfg) or "8000"
 
-    if cfg.browser_open.url_path is None:
-        url = _build_autologin_url(cfg, host, port) if cfg.autologin.enabled else f"http://{host}:{port}/"
-    else:
+    if cfg.browser_open.url_path is not None:
         url = f"http://{host}:{port}{cfg.browser_open.url_path}"
+    elif cfg.autologin.enabled:
+        status = _probe_autologin_status(cfg, host, port)
+        if status == 404:
+            _print_autologin_not_wired_banner(cfg, host, port)
+            url = f"http://{host}:{port}/"
+        else:
+            url = _build_autologin_url(cfg, host, port)
+    else:
+        url = f"http://{host}:{port}/"
 
     logger.info("django-dev-helpers: opening browser at %s", url)
     webbrowser.open(url)

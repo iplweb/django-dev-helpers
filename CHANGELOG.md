@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] — 2026-05-11
+
+### Added
+- Browser-opening flow now HEAD-probes the autologin URL before opening
+  it. If the URL responds with 404 (e.g. because the user installed the
+  package but forgot to wire `*autologin_urlpatterns()` into their
+  `urls.py`), django-dev-helpers prints a banner explaining how to enable
+  autologin (or disable it in settings) and opens `http://<host>:<port>/`
+  instead — so the user lands on the home page rather than a Django 404
+  debug page. HEAD is used to avoid triggering a real autologin side
+  effect during the probe. Connection errors during the probe fall back
+  to the previous behavior (open the autologin URL anyway).
+
 ## [0.1.4] — 2026-05-11
 
 ### Fixed
