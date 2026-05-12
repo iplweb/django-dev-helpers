@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.8] — 2026-05-12
+
+### Changed
+- README now documents the auth-state toggles
+  (`?__autologin__=tmp_off|logout|log_in`) and the required middleware
+  ordering for manual installs (after `SessionMiddleware`,
+  `AuthenticationMiddleware`, and `MessageMiddleware`). The configuration
+  example also includes the new `autologin.middleware_autoinstall` and
+  `autologin.query_param` keys. No code changes.
+
 ## [0.1.7] — 2026-05-12
 
 ### Added

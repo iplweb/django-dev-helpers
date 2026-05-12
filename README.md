@@ -10,6 +10,7 @@ Dev-time conveniences for Django projects: autologin endpoint, dotfiles for LLM 
 ## Features
 
 - **Autologin endpoint** — one URL logs in a user via token, no interactive login needed
+- **Auth-state query toggles** — `?__autologin__=tmp_off|logout|log_in` on *any* URL to flip auth state in the browser without leaving the page
 - **Dotfiles** — `.dev_helpers_token`, `.dev_helpers_port`, `.dev_helpers_pg_*`, `.dev_helpers_redis_*` written to project root for easy `cat` by LLM agents
 - **Agent help prompt** — copy-pasteable curl/psql/redis-cli commands printed at startup
 - **Gitignore self-check** — warns if dotfiles are not in `.gitignore`
@@ -70,12 +71,57 @@ urlpatterns = [
 
 ## Usage
 
-### Autologin
+### Autologin URL (token-based)
 
 ```bash
 T=$(cat .dev_helpers_token)
 curl -L "http://localhost:8000/__autologin__/?token=$T"
 ```
+
+### Auth-state toggles (browser-friendly)
+
+Once `AutologinMiddleware` is wired (the default), every request is scanned for
+a toggle query parameter. Drop it onto any URL — the middleware handles it
+before URL resolution.
+
+| URL on any view | Effect |
+|---|---|
+| `https://localhost:8000/some/page/?__autologin__=tmp_off` | Render **this one request** with `request.user = AnonymousUser`. Session unchanged — the next plain request is logged in again. Toggle param stripped from `request.GET` before the view sees it. |
+| `https://localhost:8000/some/page/?__autologin__=logout` | `django.contrib.auth.logout(request)` — ends the session. 302 to the same path with the toggle stripped; other query parameters preserved. |
+| `https://localhost:8000/some/page/?__autologin__=log_in` (or `login`) | Log in the configured user (`autologin.user_lookup_field` / `user_lookup_value`). 302 to the cleaned URL. No URL token required — the localhost host allowlist is the trust signal. |
+
+Unknown values pass through silently (likely typos). Off-host requests pass
+through identically — the toggles do not announce their existence to
+unauthorized hosts.
+
+Rename the parameter via `autologin.query_param`, or set it to `""` / `None`
+to disable the toggle layer while keeping the path-based `/__autologin__/`
+URL working. Full details and threat model:
+[docs/autologin.md](docs/autologin.md#toggle-query-parameters).
+
+### Middleware ordering
+
+`AutologinMiddleware` is auto-appended at the **end** of `settings.MIDDLEWARE`
+during `AppConfig.ready()`. That works because the toggles need
+`SessionMiddleware`, `AuthenticationMiddleware`, and `MessageMiddleware` to
+have already run by the time we look at the request — sessions for
+`logout`/`log_in`, `request.user` set up so `tmp_off` can override it, and
+`request._messages` for the path-based view's `flash_message`.
+
+If you install the middleware **manually** (with
+`autologin.middleware_autoinstall=False`), place it **after** those three:
+
+```python
+MIDDLEWARE = [
+    "django.contrib.sessions.middleware.SessionMiddleware",
+    "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "django.contrib.messages.middleware.MessageMiddleware",
+    # ... your other middleware ...
+    "django_dev_helpers.middleware.AutologinMiddleware",
+]
+```
+
+Putting it before `SessionMiddleware`/`AuthenticationMiddleware`/`MessageMiddleware` will break `logout`, `log_in`, and `flash_message` respectively.
 
 ### Management Commands
 
@@ -117,6 +163,12 @@ DJANGO_DEV_HELPERS = {
         "user_lookup_value": "admin",
         "url_path": "__autologin__/",
         "redirect_to": "/",
+        # Middleware that handles the autologin URL + auth-state toggles.
+        # Auto-appended to settings.MIDDLEWARE; refuses to load when DEBUG=False.
+        "middleware_autoinstall": True,
+        # Name of the query toggle (?__autologin__=tmp_off|logout|log_in).
+        # Set to "" or None to disable the toggle layer.
+        "query_param": "__autologin__",
     },
     "dotfiles": {
         "enabled": True,
