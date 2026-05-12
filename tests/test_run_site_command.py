@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from io import StringIO
 from unittest.mock import patch
 
@@ -205,6 +206,53 @@ def test_run_from_argv_still_accepts_explicit_double_dash(project_dir):
 
         Command().run_from_argv(["manage.py", "run_site", "--", "--port", "9000"])
     spawn.assert_called_once_with(["run", "--port", "9000"])
+
+
+def test_injects_python_when_running_under_uv(project_dir, monkeypatch):
+    monkeypatch.setenv("UV", "/usr/local/bin/uv")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn:
+        _call(settings_override=overrides)
+    spawn.assert_called_once_with(["run", "--python", sys.executable])
+
+
+def test_does_not_inject_python_when_not_under_uv(project_dir):
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn:
+        _call(settings_override=overrides)
+    spawn.assert_called_once_with(["run"])
+
+
+def test_does_not_inject_python_when_user_already_passed_it(project_dir, monkeypatch):
+    monkeypatch.setenv("UV", "/usr/local/bin/uv")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn:
+        _call("--", "--python", "/opt/other/python", settings_override=overrides)
+    spawn.assert_called_once_with(["run", "--python", "/opt/other/python"])
+
+
+def test_does_not_inject_python_when_user_passed_equals_form(project_dir, monkeypatch):
+    monkeypatch.setenv("UV", "/usr/local/bin/uv")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn:
+        _call("--", "--python=/opt/other/python", settings_override=overrides)
+    spawn.assert_called_once_with(["run", "--python=/opt/other/python"])
+
+
+def test_python_injected_after_manage_py_when_both_apply(project_dir, tmp_path, monkeypatch):
+    monkeypatch.setenv("UV", "/usr/local/bin/uv")
+    manage_py = tmp_path / "example" / "manage.py"
+    manage_py.parent.mkdir()
+    manage_py.write_text("# fake manage.py\n", encoding="utf-8")
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with (
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+        patch("django_dev_helpers.management.commands.run_site.sys.argv", [str(manage_py), "run_site"]),
+    ):
+        _call("--", "--port", "9000", settings_override=overrides)
+    spawn.assert_called_once_with(
+        ["run", "--python", sys.executable, "--manage-py", str(manage_py.resolve()), "--port", "9000"]
+    )
 
 
 def test_claude_md_marker_in_agents_md_silences_for_both(project_dir):

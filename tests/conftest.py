@@ -16,7 +16,18 @@ def _reset_config():
 @pytest.fixture(autouse=True)
 def _setup_env():
     os.environ.setdefault("DJANGO_DEV_HELPERS_ENABLED", "1")
+    # Most test invocations come in via `uv run pytest`, which sets `UV`
+    # and `UV_RUN_RECURSION_DEPTH`. The run_site command treats `UV` as
+    # the signal that it is running under `uv run` and pins run-site's
+    # interpreter via `--python`. Clear those by default so tests must
+    # opt in explicitly when they want that behavior exercised.
+    prev_uv = os.environ.pop("UV", None)
+    prev_depth = os.environ.pop("UV_RUN_RECURSION_DEPTH", None)
     yield
+    if prev_uv is not None:
+        os.environ["UV"] = prev_uv
+    if prev_depth is not None:
+        os.environ["UV_RUN_RECURSION_DEPTH"] = prev_depth
     for key in [
         "DJANGO_DEV_HELPERS_ENABLED",
         "DEV_HELPERS_AUTOLOGIN_TOKEN",

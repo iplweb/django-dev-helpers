@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] — 2026-05-12
+
+### Changed
+- `manage.py run_site` now detects when it is running under `uv run`
+  (via the `UV` env var that uv exports into child processes) and
+  pins `run-site` to the current interpreter by injecting
+  `--python sys.executable`. This short-circuits `run-site`'s own
+  `uv run python` discovery, which would otherwise spawn a second
+  `uv run` without the outer `--extra` flags and re-sync the project
+  venv — dropping optional dependencies the user had installed for
+  this session. Skipped if the user already passes `--python`
+  themselves (either `--python /path` or `--python=/path`).
+
 ## [0.1.9] — 2026-05-12
 
 ### Changed

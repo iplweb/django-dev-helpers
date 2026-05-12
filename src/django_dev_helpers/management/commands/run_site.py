@@ -75,6 +75,14 @@ class Command(BaseCommand):
         if manage_py and not _forwarded_has_arg(forwarded, "--manage-py"):
             forwarded = ["--manage-py", manage_py, *forwarded]
 
+        # If we're already running inside `uv run`, pin run-site to the
+        # current interpreter. Otherwise run-site's discovery may shell out
+        # to a fresh `uv run python`, which — lacking the `--extra` flags
+        # the user passed to the outer `uv run` — would re-sync the project
+        # venv and remove those optional dependencies.
+        if _is_running_under_uv() and not _forwarded_has_arg(forwarded, "--python"):
+            forwarded = ["--python", sys.executable, *forwarded]
+
         spawn_run_site(["run", *forwarded])
 
     def _maybe_suggest_agent_help_block(self, cfg) -> None:
@@ -144,6 +152,16 @@ def spawn_run_site(argv: list[str]) -> None:
         )
     os.execvp(binary, [binary, *argv])
     sys.exit(0)
+
+
+def _is_running_under_uv() -> bool:
+    """Return True if the current process was launched via ``uv run``.
+
+    ``uv run`` exports ``UV`` (the absolute path of the uv binary it used)
+    into the child process; that env var is absent for plain ``python`` or
+    activated-venv invocations, which makes it the most reliable signal.
+    """
+    return bool(os.environ.get("UV"))
 
 
 def _detect_invoking_manage_py() -> str | None:
