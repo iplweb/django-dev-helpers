@@ -32,6 +32,7 @@ Unknown top-level keys raise `ImproperlyConfigured`.
 | `extra_cookies` | list[dict] | `[]` | Each dict is `**kwargs` to `HttpResponse.set_cookie`. `name` is accepted as alias for `key`. |
 | `allowed_hosts` | list[str] | `[]` | Extra hostnames (glob patterns OK) on top of the default allowlist (`localhost`, `127.0.0.1`, `[::1]`). |
 | `middleware_autoinstall` | bool | `True` | Auto-append `django_dev_helpers.middleware.AutologinMiddleware` to `settings.MIDDLEWARE` on app startup so the autologin URL works without `urls.py` changes. The middleware refuses to load when `DEBUG=False` (raises `ImproperlyConfigured`). Set to `False` to install the middleware manually or to only use `autologin_urlpatterns()`. |
+| `query_param` | str \| None | `"__autologin__"` | Name of the query-string toggle the middleware watches on every request. Values `tmp_off` (anonymize this request), `logout` (end the session), `log_in`/`login` (re-login configured user) are handled. Set to `""` or `None` to disable the toggle layer. See [autologin.md](autologin.md#toggle-query-parameters). |
 
 ## `dotfiles`
 

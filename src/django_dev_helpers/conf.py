@@ -21,6 +21,7 @@ _AUTOLOGIN_DEFAULTS: dict[str, Any] = {
     "extra_cookies": [],
     "allowed_hosts": [],
     "middleware_autoinstall": True,
+    "query_param": "__autologin__",
 }
 
 _DOTFILES_DEFAULTS: dict[str, Any] = {
@@ -142,6 +143,10 @@ def _validate(merged: dict[str, Any], raw: dict[str, Any]) -> None:
 
     if not isinstance(merged["autologin"]["middleware_autoinstall"], bool):
         raise ImproperlyConfigured("DJANGO_DEV_HELPERS['autologin']['middleware_autoinstall'] must be a bool.")
+
+    query_param = merged["autologin"]["query_param"]
+    if query_param is not None and not isinstance(query_param, str):
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['autologin']['query_param'] must be a string or None.")
 
     non_serving = merged["safety"]["non_serving_commands"]
     if not isinstance(non_serving, (list, tuple, set, frozenset)):

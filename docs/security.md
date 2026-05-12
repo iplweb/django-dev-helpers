@@ -96,6 +96,18 @@ token-gated login backdoor. To opt out of the auto-install entirely, set
 `autologin.middleware_autoinstall=False` and either wire
 `autologin_urlpatterns()` in your URLconf or add the middleware manually.
 
+The middleware also handles three convenience query-string toggles
+(`?__autologin__=tmp_off|logout|log_in`). The token is **not** required
+for these: the trust signal is the same host allowlist
+(`refuse_if_unsafe_host`) that gates the autologin URL itself. The
+rationale: an attacker outside the allowlist cannot reach the toggles in
+the first place; an attacker on localhost can already read
+`.dev_helpers_token` and use the URL flow. The toggles are convenience,
+not a new attack surface. Disable them with
+`autologin.query_param = None` (or `""`) if your threat model is stricter
+— for example if you have other users on the localhost loopback or share
+a tmux session.
+
 ## Sanity warnings (informational)
 
 These don't block startup, just emit `RuntimeWarning`:

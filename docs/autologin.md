@@ -111,6 +111,30 @@ DJANGO_DEV_HELPERS = {
 
 Hostname matching uses `fnmatch.fnmatchcase` after lower-casing both sides.
 
+## Toggle query parameters
+
+Once the middleware is wired (default), every request is also scanned for a
+toggle parameter that lets you flip auth state on the fly without touching
+the dedicated autologin URL. The default parameter name is
+`__autologin__`; rename it via `autologin.query_param` (set it to `""` or
+`None` to disable the toggles entirely).
+
+| URL on any view | Effect |
+|---|---|
+| `?__autologin__=tmp_off` | Render **this one request** with `request.user = AnonymousUser`. The session is not modified — the next request without the toggle is logged in again. The toggle param is stripped from `request.GET` so downstream views see a clean query string. |
+| `?__autologin__=logout` | `django.contrib.auth.logout(request)` — the entire session is logged out. Returns a 302 to the same path with the toggle removed; other query parameters are preserved. |
+| `?__autologin__=log_in` (or `login`) | Log the configured user in (uses `autologin.user_lookup_field` / `user_lookup_value`). No URL token required: localhost trust via the host allowlist is the credential. Returns a 302 to the cleaned URL. |
+
+Unknown values are ignored — the request flows through normally. All three
+toggles share the existing `refuse_if_unsafe_host` check, so they only do
+anything for localhost-style hosts (or hosts explicitly added via
+`autologin.allowed_hosts`).
+
+The toggle layer is layered on top of the path-based autologin URL, not a
+replacement: `/__autologin__/?token=…` continues to require the URL token
+(no change to that flow). The toggles are the convenience surface for a
+developer who has already established a session.
+
 ## Custom user lookup
 
 By default the view looks up `User.objects.get(username="admin")`. For custom

@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] — 2026-05-12
+
+### Added
+- `AutologinMiddleware` now also handles three query-string toggles on
+  *any* URL, so a developer can flip auth state in the browser without
+  navigating to a dedicated URL:
+  - `?__autologin__=tmp_off` -- render this one request as anonymous
+    (`request.user = AnonymousUser`); session is unchanged so the next
+    request without the toggle is logged in again. The toggle param is
+    stripped from `request.GET` before the view runs.
+  - `?__autologin__=logout` -- `django.contrib.auth.logout(request)`;
+    302 to the same path with the toggle stripped. Other query params
+    preserved.
+  - `?__autologin__=log_in` (or `login`) -- log the configured user in
+    (`autologin.user_lookup_field` / `user_lookup_value`); 302 to the
+    cleaned URL. No URL token required: the existing host allowlist
+    (`refuse_if_unsafe_host`) provides the trust signal, same as for
+    the path-based autologin URL.
+- New config key `autologin.query_param` (default `"__autologin__"`).
+  Rename the toggle, or set to `""` / `None` to disable the toggle
+  layer entirely while keeping the path-based autologin URL.
+- Unknown toggle values fall through silently (probably a typo); off-host
+  toggle requests fall through identically (no 404 / no redirect — would
+  leak the toggle's existence).
+
+### Changed
+- `docs/autologin.md`, `docs/configuration.md`, and `docs/security.md`
+  document the toggles and their threat model.
+
 ## [0.1.6] — 2026-05-11
 
 ### Added
