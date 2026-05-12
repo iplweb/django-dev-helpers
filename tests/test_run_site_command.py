@@ -159,6 +159,54 @@ def test_claude_md_suggestion_when_no_files_exist(project_dir):
     assert "CLAUDE.md or AGENTS.md" in err
 
 
+def test_run_from_argv_forwards_unknown_flags_without_separator(project_dir):
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with (
+        override_settings(DJANGO_DEV_HELPERS=overrides),
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+    ):
+        from django_dev_helpers.management.commands.run_site import Command
+
+        Command().run_from_argv(["manage.py", "run_site", "--from-dump=/tmp/x.sql", "--no-browser"])
+    spawn.assert_called_once_with(["run", "--from-dump=/tmp/x.sql", "--no-browser"])
+
+
+def test_run_from_argv_preserves_order_with_mixed_flags(project_dir):
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with (
+        override_settings(DJANGO_DEV_HELPERS=overrides),
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+    ):
+        from django_dev_helpers.management.commands.run_site import Command
+
+        Command().run_from_argv(["manage.py", "run_site", "--port", "9000", "--no-browser"])
+    spawn.assert_called_once_with(["run", "--port", "9000", "--no-browser"])
+
+
+def test_run_from_argv_keeps_django_flags_separate_from_forwarded(project_dir):
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with (
+        override_settings(DJANGO_DEV_HELPERS=overrides),
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+    ):
+        from django_dev_helpers.management.commands.run_site import Command
+
+        Command().run_from_argv(["manage.py", "run_site", "--verbosity", "2", "--from-dump=/tmp/x.sql", "--traceback"])
+    spawn.assert_called_once_with(["run", "--from-dump=/tmp/x.sql"])
+
+
+def test_run_from_argv_still_accepts_explicit_double_dash(project_dir):
+    overrides = {"enabled": True, "dotfiles": {"directory": str(project_dir)}, "claude_md": {"mode": "off"}}
+    with (
+        override_settings(DJANGO_DEV_HELPERS=overrides),
+        patch("django_dev_helpers.management.commands.run_site.spawn_run_site") as spawn,
+    ):
+        from django_dev_helpers.management.commands.run_site import Command
+
+        Command().run_from_argv(["manage.py", "run_site", "--", "--port", "9000"])
+    spawn.assert_called_once_with(["run", "--port", "9000"])
+
+
 def test_claude_md_marker_in_agents_md_silences_for_both(project_dir):
     marker = "<!-- django-dev-helpers:agent-help -->"
     (project_dir / "CLAUDE.md").write_text("# no marker here\n", encoding="utf-8")

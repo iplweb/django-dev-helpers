@@ -11,6 +11,25 @@ from django.core.management.base import BaseCommand, CommandError
 logger = logging.getLogger(__name__)
 
 
+_DJANGO_FLAG_NO_VALUE = frozenset(
+    {
+        "--version",
+        "--traceback",
+        "--no-color",
+        "--force-color",
+        "--skip-checks",
+    }
+)
+_DJANGO_FLAG_TAKES_VALUE = frozenset(
+    {
+        "-v",
+        "--verbosity",
+        "--settings",
+        "--pythonpath",
+    }
+)
+
+
 class Command(BaseCommand):
     help = "Run `run-site run` (the run-site dev-stack orchestrator) with django-dev-helpers conveniences."
 
@@ -18,8 +37,24 @@ class Command(BaseCommand):
         parser.add_argument(
             "run_site_args",
             nargs=argparse.REMAINDER,
-            help="Arguments forwarded verbatim to `run-site run` (use `-- --port 9000`).",
+            help="Arguments forwarded verbatim to `run-site run` (e.g. `--port 9000`).",
         )
+
+    def run_from_argv(self, argv: list[str]) -> None:
+        """Split argv so users don't need to type ``--`` before run-site flags.
+
+        Django's default ``parse_args(argv[2:])`` rejects unknown options, so
+        ``manage.py run_site --port 9000`` would error unless the user inserted
+        ``--``. We pre-split argv into (Django flags, forwarded args) and
+        rebuild it with an explicit ``--`` separator, so argparse's REMAINDER
+        positional captures the forwarded args in their original order.
+        """
+        django_args, forwarded = _split_argv_for_run_site(list(argv[2:]))
+        new_argv = list(argv[:2]) + django_args
+        if forwarded:
+            new_argv.append("--")
+            new_argv.extend(forwarded)
+        super().run_from_argv(new_argv)
 
     def handle(self, *args, **options) -> None:
         from django_dev_helpers.conf import get_config
@@ -126,3 +161,46 @@ def _forwarded_has_arg(argv: list[str], name: str) -> bool:
     """Return True if ``name`` or ``name=...`` is already present in argv."""
     prefix = f"{name}="
     return any(a == name or a.startswith(prefix) for a in argv)
+
+
+def _split_argv_for_run_site(args: list[str]) -> tuple[list[str], list[str]]:
+    """Split manage.py args into (Django flags, args to forward to run-site).
+
+    Anything that isn't one of Django's BaseCommand flags is forwarded. A
+    literal ``--`` token still forces everything after it to be forwarded,
+    so old invocations keep working.
+    """
+    django_args: list[str] = []
+    forwarded: list[str] = []
+    i = 0
+    while i < len(args):
+        a = args[i]
+        if a == "--":
+            forwarded.extend(args[i + 1 :])
+            break
+        if a in _DJANGO_FLAG_NO_VALUE:
+            django_args.append(a)
+            i += 1
+            continue
+        if a in _DJANGO_FLAG_TAKES_VALUE:
+            django_args.append(a)
+            if i + 1 < len(args):
+                django_args.append(args[i + 1])
+                i += 2
+            else:
+                i += 1
+            continue
+        if "=" in a:
+            opt = a.split("=", 1)[0]
+            if opt in _DJANGO_FLAG_TAKES_VALUE or opt in _DJANGO_FLAG_NO_VALUE:
+                django_args.append(a)
+                i += 1
+                continue
+        # Short option with attached value, e.g. ``-v2``.
+        if len(a) == 3 and a.startswith("-v") and a[2].isdigit():
+            django_args.append(a)
+            i += 1
+            continue
+        forwarded.append(a)
+        i += 1
+    return django_args, forwarded

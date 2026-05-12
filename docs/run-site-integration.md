@@ -15,13 +15,18 @@
 python manage.py run_site
 ```
 
-Forward extra flags to `run-site run` after `--`:
+Forward extra flags to `run-site run` directly:
 
 ```bash
-python manage.py run_site -- --port 9000 --no-browser --no-migrate
+python manage.py run_site --port 9000 --no-browser --no-migrate
+python manage.py run_site --from-dump=/tmp/site.sql
 ```
 
-The `--` separator is required when forwarding options, so `argparse` does not try to claim them for `manage.py`. Anything before `--` is treated as a Django command flag.
+Anything that isn't a standard Django manage.py option (`--verbosity`, `--settings`, `--pythonpath`, `--traceback`, `--no-color`, `--force-color`, `--skip-checks`) is forwarded verbatim to `run-site run`. You can still pass an explicit `--` separator if you want to be precise about it:
+
+```bash
+python manage.py run_site --verbosity 2 -- --port 9000
+```
 
 ## Agent help block hint
 

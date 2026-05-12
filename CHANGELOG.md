@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.9] — 2026-05-12
+
+### Changed
+- `manage.py run_site` no longer requires a `--` separator before flags
+  meant for `run-site run`. Anything that isn't a standard Django
+  manage.py option (`--verbosity`, `--settings`, `--pythonpath`,
+  `--traceback`, `--no-color`, `--force-color`, `--skip-checks`,
+  `--version`) is now forwarded verbatim, so
+  `manage.py run_site --from-dump=/tmp/x.sql --port 9000` works
+  directly. An explicit `--` separator still works and is honored
+  verbatim.
+
 ## [0.1.8] — 2026-05-12
 
 ### Changed
