@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.11] — 2026-05-13
+
+### Added
+- New `django_dev_helpers.allowed_hosts.inject_allowed_hosts()` reads the
+  `DEV_HELPERS_ALLOWED_HOSTS` env var (comma-separated list set by
+  `run-site` >= 0.13.0 when binding to a non-loopback address) and unions
+  the entries into `settings.ALLOWED_HOSTS` from `AppConfig.ready()`.
+  Lets the dev server be reached from phones / other LAN devices without
+  per-project `ALLOWED_HOSTS` edits. Idempotent, gated by `is_active()`,
+  and a no-op when settings already contain `*` or the var is unset.
+
 ## [0.1.10] — 2026-05-12
 
 ### Changed

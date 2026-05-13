@@ -59,7 +59,13 @@ class DjangoDevHelpersConfig(AppConfig):
         if not cfg.is_active():
             return
 
+        from .allowed_hosts import inject_allowed_hosts
         from .safety import _is_serving, assert_safe_to_activate, emit_sanity_warnings
+
+        # Run before safety/serving checks so the host list is in place
+        # for any request (including those that fire during startup —
+        # browser auto-open, autologin probes). Idempotent.
+        inject_allowed_hosts()
 
         assert_safe_to_activate(cfg)
         emit_sanity_warnings(cfg)
