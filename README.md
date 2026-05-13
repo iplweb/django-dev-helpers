@@ -16,6 +16,7 @@ Dev-time conveniences for Django projects: autologin endpoint, dotfiles for LLM 
 - **Agent help prompt** — copy-pasteable curl/psql/redis-cli commands printed at startup
 - **Gitignore self-check** — warns if dotfiles are not in `.gitignore`
 - **Browser auto-open** — opens autologin URL in browser after server starts
+- **`ALLOWED_HOSTS` auto-injection** — when started by [`run-site`](https://github.com/iplweb/django-run-site) `--bind 0.0.0.0`, unions the discovered LAN hostnames/IPs into `settings.ALLOWED_HOSTS` so other devices on the network can reach the dev server without per-project edits
 - **Production-safe** — default-off, requires explicit `enabled=True`, raises on `DEBUG=False`
 
 ## Installation
@@ -123,6 +124,33 @@ MIDDLEWARE = [
 ```
 
 Putting it before `SessionMiddleware`/`AuthenticationMiddleware`/`MessageMiddleware` will break `logout`, `log_in`, and `flash_message` respectively.
+
+### Auto-injected `ALLOWED_HOSTS` (with `run-site`)
+
+When the dev server is started via
+[`run-site`](https://github.com/iplweb/django-run-site) >= 0.13.0 with
+a non-loopback bind (e.g. `run-site run --bind 0.0.0.0`),
+`run-site` discovers the machine's mDNS hostname and primary LAN IP
+and exports them under `DEV_HELPERS_ALLOWED_HOSTS`. At
+`AppConfig.ready()`, `django-dev-helpers` reads that env var and
+unions the entries into `settings.ALLOWED_HOSTS`.
+
+This means a phone on the same Wi‑Fi can hit
+`http://your-mac.local:8000/` without you touching `settings.py` —
+even when the project hard-codes `ALLOWED_HOSTS = ['localhost']`.
+
+Behaviour:
+
+- Idempotent — safe under runserver autoreload, no duplicate entries.
+- Gated by `is_active()` (i.e. `DJANGO_DEV_HELPERS_ENABLED=1`) — the
+  env var is ignored unless the helper is fully activated, so a
+  leftover var in production cannot mutate `ALLOWED_HOSTS`.
+- No-op when `settings.ALLOWED_HOSTS` already contains `*` (your
+  setting takes precedence — adding more entries accomplishes nothing).
+- No-op when the env var is unset (default `--bind 127.0.0.1` runs).
+
+You can also set `DEV_HELPERS_ALLOWED_HOSTS=host1,host2,...` manually
+when running outside `run-site` if you want the same convenience.
 
 ### Management Commands
 
