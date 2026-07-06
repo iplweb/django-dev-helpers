@@ -147,3 +147,53 @@ def _clean_url(request, query_param):
     if encoded:
         return f"{request.path}?{encoded}"
     return request.path
+
+
+class LiveReloadMiddleware:
+    """Serve the ``/__dev_reload__/`` SSE + clients endpoints and inject the
+    live-reload client script into ``text/html`` responses.
+
+    Auto-installed by ``apps.ready()`` when ``live_reload.enabled``. Every
+    active path is gated on ``settings.DEBUG`` so this never runs in
+    production, even if the middleware is left in ``MIDDLEWARE`` by mistake.
+    """
+
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def _live(self, cfg) -> bool:
+        return settings.DEBUG and cfg.is_active() and cfg.live_reload.enabled
+
+    def __call__(self, request):
+        from . import live_reload
+        from .conf import get_config
+
+        cfg = get_config()
+        if self._live(cfg):
+            if request.path == "/__dev_reload__/":
+                return live_reload.sse_response()
+            if request.path == "/__dev_reload__/clients":
+                return live_reload.clients_response()
+
+        response = self.get_response(request)
+
+        if self._live(cfg):
+            self._maybe_inject(response, live_reload)
+        return response
+
+    def _maybe_inject(self, response, live_reload) -> None:
+        if getattr(response, "streaming", False):
+            return
+        if not response.get("Content-Type", "").startswith("text/html"):
+            return
+        try:
+            body = response.content.decode(response.charset)
+        except (UnicodeDecodeError, LookupError):
+            # Undecodable body — leave it untouched rather than corrupt it.
+            return
+        new_body = live_reload.inject(body)
+        if new_body == body:
+            return
+        response.content = new_body.encode(response.charset)
+        if response.has_header("Content-Length"):
+            response["Content-Length"] = str(len(response.content))
