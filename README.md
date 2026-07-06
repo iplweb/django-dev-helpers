@@ -17,6 +17,7 @@ Dev-time conveniences for Django projects: autologin endpoint, dotfiles for LLM 
 - **Gitignore self-check** — warns if dotfiles are not in `.gitignore`
 - **Browser auto-open** — opens autologin URL in browser after server starts
 - **`ALLOWED_HOSTS` auto-injection** — when started by [`run-site`](https://github.com/iplweb/django-run-site) `--bind 0.0.0.0`, unions the discovered LAN hostnames/IPs into `settings.ALLOWED_HOSTS` so other devices on the network can reach the dev server without per-project edits
+- **Live reload / tab reuse** — open tabs refresh themselves on restart instead of piling up new ones
 - **Production-safe** — default-off, requires explicit `enabled=True`, raises on `DEBUG=False`
 
 ## Installation
@@ -152,6 +153,17 @@ Behaviour:
 You can also set `DEV_HELPERS_ALLOWED_HOSTS=host1,host2,...` manually
 when running outside `run-site` if you want the same convenience.
 
+### Live reload / tab reuse
+
+With `live_reload.enabled` (default), a tiny SSE client is injected into every
+`text/html` page. When the server comes back after a restart (or Django
+autoreload), the already-open tab reloads itself instead of you getting a fresh
+duplicate tab. On restart, dev-helpers (and run-site, if you use it) skip
+opening a new browser tab when a live tab is already connected. See
+[docs/configuration.md#live_reload](docs/configuration.md#live_reload) for the
+knobs (`enabled`, `reuse_tabs`, `grace_seconds`) and the CSP / closed-tab
+caveats.
+
 ### Management Commands
 
 ```bash
@@ -207,6 +219,11 @@ DJANGO_DEV_HELPERS = {
     },
     "browser_open": {
         "enabled": True,
+    },
+    "live_reload": {
+        "enabled": True,     # inject SSE client; open tabs reload on restart
+        "reuse_tabs": True,  # don't open a new tab when one is already live
+        "grace_seconds": 2.0,
     },
     "gitignore": {
         "mode": "warn",  # warn | auto-add | error | off
