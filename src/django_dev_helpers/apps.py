@@ -11,6 +11,7 @@ _BROWSER_SENTINEL = "DEV_HELPERS_BROWSER_OPENED"
 _HELP_SENTINEL = "DEV_HELPERS_HELP_PRINTED"
 
 _AUTOLOGIN_MIDDLEWARE = "django_dev_helpers.middleware.AutologinMiddleware"
+_LIVE_RELOAD_MIDDLEWARE = "django_dev_helpers.middleware.LiveReloadMiddleware"
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +49,25 @@ def install_autologin_middleware_if_enabled(cfg) -> None:
     logger.debug("django-dev-helpers: auto-installed %s", _AUTOLOGIN_MIDDLEWARE)
 
 
+def install_live_reload_middleware_if_enabled(cfg) -> None:
+    """Append ``LiveReloadMiddleware`` to ``settings.MIDDLEWARE`` when
+    live-reload is enabled, so the ``/__dev_reload__/`` endpoints are served
+    and the client script is injected without the user wiring anything."""
+    if not cfg.live_reload.enabled:
+        return
+
+    from django.conf import settings
+
+    raw = getattr(settings, "MIDDLEWARE", None) or []
+    middleware = list(raw)
+    if _LIVE_RELOAD_MIDDLEWARE in middleware:
+        return
+
+    middleware.append(_LIVE_RELOAD_MIDDLEWARE)
+    settings.MIDDLEWARE = middleware
+    logger.debug("django-dev-helpers: auto-installed %s", _LIVE_RELOAD_MIDDLEWARE)
+
+
 class DjangoDevHelpersConfig(AppConfig):
     name = "django_dev_helpers"
     default_auto_field = "django.db.models.BigAutoField"
@@ -82,6 +102,7 @@ class DjangoDevHelpersConfig(AppConfig):
             return
 
         install_autologin_middleware_if_enabled(cfg)
+        install_live_reload_middleware_if_enabled(cfg)
 
         if cfg.dotfiles.enabled:
             from .dotfiles import register_cleanup, write_all_dotfiles
