@@ -7,7 +7,14 @@ from unittest.mock import MagicMock, patch
 from django_dev_helpers import browser
 
 
-def _make_cfg(probe_timeout_seconds=0.1, autologin_enabled=False, browser_url_path=None):
+def _make_cfg(
+    probe_timeout_seconds=0.1,
+    autologin_enabled=False,
+    browser_url_path=None,
+    live_reload_enabled=True,
+    reuse_tabs=True,
+    grace_seconds=1.0,
+):
     return SimpleNamespace(
         browser_open=SimpleNamespace(
             enabled=True,
@@ -16,6 +23,11 @@ def _make_cfg(probe_timeout_seconds=0.1, autologin_enabled=False, browser_url_pa
             probe_timeout_seconds=probe_timeout_seconds,
         ),
         autologin=SimpleNamespace(enabled=autologin_enabled, url_path="dev-helpers/autologin/"),
+        live_reload=SimpleNamespace(
+            enabled=live_reload_enabled,
+            reuse_tabs=reuse_tabs,
+            grace_seconds=grace_seconds,
+        ),
     )
 
 
@@ -243,3 +255,42 @@ def test_open_browser_probe_uses_head_method():
     assert urlopen.call_count == 1
     request_arg = urlopen.call_args[0][0]
     assert request_arg.get_method() == "HEAD"
+
+
+def test_existing_live_tab_true_when_client_connected():
+    cfg = _make_cfg(grace_seconds=1.0)
+    with (
+        patch.object(browser.live_reload, "count", return_value=1),
+        patch.object(browser.time, "sleep"),
+    ):
+        assert browser.existing_live_tab(cfg) is True
+
+
+def test_existing_live_tab_false_when_no_clients():
+    cfg = _make_cfg(grace_seconds=1.0)
+    with (
+        patch.object(browser.live_reload, "count", return_value=0),
+        patch.object(browser.time, "sleep"),
+    ):
+        assert browser.existing_live_tab(cfg) is False
+
+
+def test_existing_live_tab_false_when_reuse_disabled():
+    cfg = _make_cfg(reuse_tabs=False)
+    with patch.object(browser.live_reload, "count", return_value=5) as count:
+        assert browser.existing_live_tab(cfg) is False
+    count.assert_not_called()
+
+
+def test_wait_for_http_skips_open_when_live_tab_present():
+    cfg = _make_cfg()
+    response = MagicMock()
+    response.status = 200
+    with (
+        patch.object(browser.urllib.request, "urlopen", return_value=response),
+        patch.object(browser, "existing_live_tab", return_value=True),
+        patch.object(browser, "open_browser") as open_browser,
+        patch.object(browser.time, "sleep"),
+    ):
+        browser.wait_for_http(cfg)
+    open_browser.assert_not_called()
