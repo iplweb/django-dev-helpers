@@ -1,3 +1,5 @@
+import json
+
 from django_dev_helpers import live_reload
 
 
@@ -42,3 +44,44 @@ def test_inject_uses_last_body_case_insensitive():
     out = live_reload.inject(html)
     assert "EventSource" in out
     assert out.rindex("EventSource") < out.rindex("</BODY>")
+
+
+def test_event_stream_first_chunk_has_boot_id_and_retry():
+    live_reload._reset()
+    live_reload._shutdown.clear()
+    gen = live_reload.event_stream()
+    first = next(gen).decode()
+    assert "event: hello" in first
+    assert "retry:" in first
+    assert live_reload.BOOT_ID in first
+    gen.close()
+
+
+def test_event_stream_registers_and_unregisters():
+    live_reload._reset()
+    live_reload._shutdown.clear()
+    gen = live_reload.event_stream()
+    assert live_reload.count() == 0
+    next(gen)
+    assert live_reload.count() == 1
+    gen.close()
+    assert live_reload.count() == 0
+
+
+def test_sse_response_headers():
+    # Constructing the response does not start the generator, so no
+    # connection is registered and there is nothing to clean up here.
+    resp = live_reload.sse_response()
+    assert resp["Content-Type"] == "text/event-stream"
+    assert resp["Cache-Control"] == "no-cache"
+    assert resp["X-Accel-Buffering"] == "no"
+
+
+def test_clients_response_reports_count():
+    live_reload._reset()
+    resp = live_reload.clients_response()
+    assert json.loads(resp.content) == {"count": 0}
+    cid = live_reload.register()
+    resp = live_reload.clients_response()
+    assert json.loads(resp.content) == {"count": 1}
+    live_reload.unregister(cid)
