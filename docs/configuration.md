@@ -12,6 +12,7 @@ has a default; a minimal config is just `{"enabled": True}`.
 | `dotfiles` | dict | see below | |
 | `agent_help` | dict | see below | |
 | `browser_open` | dict | see below | |
+| `live_reload` | dict | see below | Refresh open tabs on restart instead of opening new ones. |
 | `gitignore` | dict | see below | |
 | `lookup` | dict | see below | DB/Redis discovery chain. |
 | `safety` | dict | see below | Production safety check controls. |
@@ -68,6 +69,30 @@ Unknown top-level keys raise `ImproperlyConfigured`.
 
 The browser is skipped on Linux when neither `DISPLAY` nor `WAYLAND_DISPLAY` is
 set.
+
+## `live_reload`
+
+| Key | Type | Default | Notes |
+|---|---|---|---|
+| `enabled` | bool | `True` | Serve `/__dev_reload__/` (SSE) + `/__dev_reload__/clients`, and inject a small client script into every `text/html` response. The injected tab reloads itself when the server comes back after a restart (or Django autoreload). Auto-installs `LiveReloadMiddleware`; gated on `DEBUG` so it never runs in production. |
+| `reuse_tabs` | bool | `True` | Before opening its own browser tab, dev-helpers waits `grace_seconds` and skips the open when a live-reload client is already connected (a surviving tab reloads itself instead of a duplicate opening). |
+| `grace_seconds` | float | `2.0` | How long to wait for surviving tabs to reconnect before deciding whether to open a fresh tab. Also the first-launch open latency. |
+
+**How it works.** Each server boot has a random `boot_id`. The injected script
+holds a single SSE connection (quiet: one log line per tab per boot, not
+per-second polling); when it reconnects after a restart and sees a new
+`boot_id`, it calls `location.reload()`. Because both the run-site homepage tab
+and the autologin tab load HTML from the same server, both get the script.
+
+**Caveats.**
+
+- A strict `Content-Security-Policy` (`script-src`) in DEBUG can block the
+  inline script — set `live_reload.enabled = False` in that case.
+- If you close one of two tabs and restart, the surviving tab reloads but the
+  closed one is not reopened (the two tabs are indistinguishable — both end up
+  at `/`). Close both to get fresh tabs again.
+- An open SSE connection can briefly delay `runserver` shutdown; this is short
+  (daemon thread + heartbeat).
 
 ## `gitignore`
 

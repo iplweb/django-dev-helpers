@@ -50,6 +50,12 @@ _BROWSER_OPEN_DEFAULTS: dict[str, Any] = {
     "probe_timeout_seconds": 30.0,
 }
 
+_LIVE_RELOAD_DEFAULTS: dict[str, Any] = {
+    "enabled": True,
+    "reuse_tabs": True,
+    "grace_seconds": 2.0,
+}
+
 _GITIGNORE_DEFAULTS: dict[str, Any] = {
     "mode": "warn",
     "path": None,
@@ -76,6 +82,7 @@ _DEFAULTS: dict[str, Any] = {
     "dotfiles": _DOTFILES_DEFAULTS,
     "agent_help": _AGENT_HELP_DEFAULTS,
     "browser_open": _BROWSER_OPEN_DEFAULTS,
+    "live_reload": _LIVE_RELOAD_DEFAULTS,
     "gitignore": _GITIGNORE_DEFAULTS,
     "lookup": _LOOKUP_DEFAULTS,
     "safety": _SAFETY_DEFAULTS,
@@ -175,6 +182,15 @@ def _validate(merged: dict[str, Any], raw: dict[str, Any]) -> None:
     if not isinstance(claude_md_marker, str) or not claude_md_marker:
         raise ImproperlyConfigured("DJANGO_DEV_HELPERS['claude_md']['marker'] must be a non-empty string.")
 
+    live_reload = merged["live_reload"]
+    if not isinstance(live_reload["enabled"], bool):
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['live_reload']['enabled'] must be a bool.")
+    if not isinstance(live_reload["reuse_tabs"], bool):
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['live_reload']['reuse_tabs'] must be a bool.")
+    grace = live_reload["grace_seconds"]
+    if isinstance(grace, bool) or not isinstance(grace, (int, float)) or grace < 0:
+        raise ImproperlyConfigured("DJANGO_DEV_HELPERS['live_reload']['grace_seconds'] must be a non-negative number.")
+
 
 def _apply_env_overrides(merged: dict[str, Any], raw: dict[str, Any]) -> None:
     """Pull a small set of orchestrator-set env vars into merged config.
@@ -202,6 +218,7 @@ class DevHelpersConfig:
         self.dotfiles = _dict_to_namespace(merged["dotfiles"])
         self.agent_help = _dict_to_namespace(merged["agent_help"])
         self.browser_open = _dict_to_namespace(merged["browser_open"])
+        self.live_reload = _dict_to_namespace(merged["live_reload"])
         self.gitignore = _dict_to_namespace(merged["gitignore"])
         self.lookup = _dict_to_namespace(merged["lookup"])
         self.safety = _dict_to_namespace(merged["safety"])

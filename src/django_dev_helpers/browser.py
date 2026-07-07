@@ -9,7 +9,7 @@ import urllib.error
 import urllib.request
 import webbrowser
 
-from django_dev_helpers import dotfiles, tokens
+from django_dev_helpers import dotfiles, live_reload, tokens
 
 logger = logging.getLogger(__name__)
 
@@ -122,6 +122,30 @@ def open_browser(cfg) -> None:
     webbrowser.open(url)
 
 
+def existing_live_tab(cfg) -> bool:
+    """True if a live-reload client is already connected (so a surviving tab
+    will reload itself and we should not open a new one). Samples the count
+    across grace_seconds to bridge the brief unregister/re-register gap when a
+    tab reconnects and immediately reloads."""
+    if not (cfg.live_reload.enabled and cfg.live_reload.reuse_tabs):
+        return False
+    grace = cfg.live_reload.grace_seconds
+    samples = max(1, int(grace / 0.5))
+    for i in range(samples):
+        if live_reload.count() >= 1:
+            return True
+        if i < samples - 1:
+            time.sleep(0.5)
+    return live_reload.count() >= 1
+
+
+def _open_unless_reused(cfg) -> None:
+    if existing_live_tab(cfg):
+        logger.info("django-dev-helpers: existing tab detected — refreshing in place, not opening a new browser tab")
+        return
+    open_browser(cfg)
+
+
 def wait_for_http(cfg) -> None:
     host = dotfiles.discover_bind_host(cfg)
     if host in ("0.0.0.0", ""):
@@ -136,11 +160,11 @@ def wait_for_http(cfg) -> None:
         try:
             response = urllib.request.urlopen(url, timeout=2)
             if response.status < 500:
-                open_browser(cfg)
+                _open_unless_reused(cfg)
                 return
         except urllib.error.HTTPError as exc:
             if exc.code < 500:
-                open_browser(cfg)
+                _open_unless_reused(cfg)
                 return
         except (urllib.error.URLError, ConnectionError, TimeoutError, OSError):
             pass

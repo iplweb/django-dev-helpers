@@ -121,3 +121,33 @@ def test_settings_must_be_dict():
         pytest.raises(ImproperlyConfigured, match="must be a dict"),
     ):
         DevHelpersConfig()
+
+
+def test_live_reload_defaults():
+    from django_dev_helpers.conf import DevHelpersConfig
+
+    with override_settings(DJANGO_DEV_HELPERS={"enabled": True}):
+        cfg = DevHelpersConfig()
+    assert cfg.live_reload.enabled is True
+    assert cfg.live_reload.reuse_tabs is True
+    assert cfg.live_reload.grace_seconds == 2.0
+
+
+def test_live_reload_enabled_must_be_bool():
+    from django_dev_helpers.conf import DevHelpersConfig
+
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "live_reload": {"enabled": "yes"}}),
+        pytest.raises(ImproperlyConfigured, match=r"live_reload.*enabled"),
+    ):
+        DevHelpersConfig()
+
+
+def test_live_reload_grace_seconds_must_be_number():
+    from django_dev_helpers.conf import DevHelpersConfig
+
+    with (
+        override_settings(DJANGO_DEV_HELPERS={"enabled": True, "live_reload": {"grace_seconds": "soon"}}),
+        pytest.raises(ImproperlyConfigured, match=r"live_reload.*grace_seconds"),
+    ):
+        DevHelpersConfig()

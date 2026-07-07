@@ -157,3 +157,42 @@ def test_autoreload_parent_skips_side_effects(monkeypatch, tmp_path):
             assert os.environ.get("DEV_HELPERS_AUTOLOGIN_TOKEN")
             assert write.call_count == 0
             assert spawn.call_count == 0
+
+
+def test_install_live_reload_middleware_appends_when_enabled():
+    from django_dev_helpers.apps import install_live_reload_middleware_if_enabled
+    from django_dev_helpers.conf import get_config, reset_config
+
+    mw = "django_dev_helpers.middleware.LiveReloadMiddleware"
+    with override_settings(MIDDLEWARE=[], DJANGO_DEV_HELPERS={"enabled": True}):
+        reset_config()
+        install_live_reload_middleware_if_enabled(get_config())
+        from django.conf import settings
+
+        assert mw in settings.MIDDLEWARE
+
+
+def test_install_live_reload_middleware_skipped_when_disabled():
+    from django_dev_helpers.apps import install_live_reload_middleware_if_enabled
+    from django_dev_helpers.conf import get_config, reset_config
+
+    mw = "django_dev_helpers.middleware.LiveReloadMiddleware"
+    with override_settings(MIDDLEWARE=[], DJANGO_DEV_HELPERS={"enabled": True, "live_reload": {"enabled": False}}):
+        reset_config()
+        install_live_reload_middleware_if_enabled(get_config())
+        from django.conf import settings
+
+        assert mw not in settings.MIDDLEWARE
+
+
+def test_install_live_reload_middleware_idempotent():
+    from django_dev_helpers.apps import install_live_reload_middleware_if_enabled
+    from django_dev_helpers.conf import get_config, reset_config
+
+    mw = "django_dev_helpers.middleware.LiveReloadMiddleware"
+    with override_settings(MIDDLEWARE=[mw], DJANGO_DEV_HELPERS={"enabled": True}):
+        reset_config()
+        install_live_reload_middleware_if_enabled(get_config())
+        from django.conf import settings
+
+        assert settings.MIDDLEWARE.count(mw) == 1
