@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] — 2026-07-07
+
+### Added
+- **Live reload / browser tab reuse.** A tiny SSE client is now injected into
+  every `text/html` response; when the server comes back after a restart (or
+  Django autoreload) the already-open tab reloads itself instead of a duplicate
+  tab being opened. New `LiveReloadMiddleware` (auto-installed, `DEBUG`-gated)
+  serves `GET /__dev_reload__/` (SSE, carrying a per-boot `boot_id`) and
+  `GET /__dev_reload__/clients` (connected-client count). Before opening its own
+  browser tab, dev-helpers samples that count and skips the open when a live tab
+  is already connected. New `live_reload` config namespace: `enabled` (True),
+  `reuse_tabs` (True), `grace_seconds` (2.0). Caveats: a strict `script-src` CSP
+  in DEBUG can block the inline script (disable via `live_reload.enabled=False`);
+  closing one of two tabs and restarting reloads the survivor but does not
+  reopen the closed one (both tabs live at `/`).
+
 ## [0.1.11] — 2026-05-13
 
 ### Added
