@@ -149,14 +149,17 @@ def test_autoreload_parent_skips_side_effects(monkeypatch, tmp_path):
 
         with (
             mock.patch("django_dev_helpers.dotfiles.write_all_dotfiles") as write,
+            mock.patch("django_dev_helpers.dotfiles.register_cleanup") as cleanup,
             mock.patch("django_dev_helpers.browser.spawn_self_probe_thread") as spawn,
         ):
             config.ready()
-            # Parent watcher: token still init'd (so child inherits) but
-            # no dotfile writes, no browser open.
+            # Parent watcher: token still init'd (so child inherits) and it
+            # registers dotfile cleanup (it is the process that exits cleanly
+            # on shutdown), but it does NOT write dotfiles or open the browser.
             assert os.environ.get("DEV_HELPERS_AUTOLOGIN_TOKEN")
             assert write.call_count == 0
             assert spawn.call_count == 0
+            assert cleanup.call_count == 1
 
 
 def test_install_live_reload_middleware_appends_when_enabled():

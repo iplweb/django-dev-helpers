@@ -99,6 +99,17 @@ class DjangoDevHelpersConfig(AppConfig):
         if not _is_serving(cfg):
             return
         if is_autoreload_parent and "runserver" in sys.argv:
+            # The autoreload parent is a throwaway file-watcher: it must not
+            # write dotfiles or open the browser (that is the serving child's
+            # job). But it still needs to register the dotfile *cleanup*: on
+            # shutdown Django's reloader SIGKILLs the serving child before its
+            # atexit/​SIGTERM cleanup can run, whereas this parent exits
+            # cleanly (SIGTERM -> sys.exit -> atexit). Without registering here
+            # the ``.dev_helpers_*`` files leak on every Ctrl+C.
+            if cfg.dotfiles.enabled:
+                from .dotfiles import register_cleanup
+
+                register_cleanup(cfg)
             return
 
         install_autologin_middleware_if_enabled(cfg)

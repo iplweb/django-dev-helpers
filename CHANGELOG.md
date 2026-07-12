@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.14] — 2026-07-12
+
+### Fixed
+- **Dotfiles (`.dev_helpers_*`) no longer leak on shutdown.** The cleanup
+  handler was only registered in the serving `runserver` child, which Django's
+  autoreloader **SIGKILLs on shutdown before its `atexit`/SIGTERM cleanup can
+  run** — so the token/port dotfiles were left behind on every Ctrl+C. The
+  autoreload *parent* process (the file-watcher) exits cleanly on SIGTERM but
+  previously skipped all dev-helpers setup. It now registers the dotfile
+  *cleanup* (only — it still does not write dotfiles or open the browser), so
+  the files are removed when the parent exits. Stale dotfiles pointing at a dead
+  port were a frequent source of confusion for tooling/agents that read them.
+
 ## [0.1.13] — 2026-07-12
 
 ### Fixed
