@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.13] — 2026-07-12
+
+### Fixed
+- **Live reload no longer stalls ASGI autoreload.** The `/__dev_reload__/` SSE
+  stream was a synchronous generator. Served over an ASGI server
+  (daphne/uvicorn — e.g. Django `runserver` with `daphne` in `INSTALLED_APPS`)
+  each open connection parked an uninterruptible worker thread in a blocking
+  `Event.wait`, so on client disconnect or an autoreload restart the server
+  had to wait out `application_close_timeout` and force-kill the instance
+  (`took too long to shut down and was killed`) — which stalled the reload.
+  `sse_response()` now serves an **async** generator under ASGI (cancelled
+  cleanly on disconnect, releasing the connection at once) and keeps the sync
+  generator for the classic WSGI `runserver` (which streams a sync iterator
+  lazily; an endless async iterator would instead be materialised in full and
+  hang). The stream kind is chosen automatically from the request type.
+
 ## [0.1.12] — 2026-07-07
 
 ### Added

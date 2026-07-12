@@ -171,7 +171,7 @@ class LiveReloadMiddleware:
         cfg = get_config()
         if self._live(cfg):
             if request.path == "/__dev_reload__/":
-                return live_reload.sse_response()
+                return live_reload.sse_response(request)
             if request.path == "/__dev_reload__/clients":
                 return live_reload.clients_response()
 
