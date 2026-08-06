@@ -12,6 +12,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Python 3.12 and 3.13 (Django 6.1 requires Python ≥ 3.12, so the 3.11 cell is
   excluded), and the `Framework :: Django :: 6.1` trove classifier was added.
 
+### Removed
+- **BREAKING: dropped support for Django 4.2, 5.0 and 5.1.** The minimum
+  supported Django is now **5.2**; the dependency floor moved from
+  `Django>=4.2` to `Django>=5.2`, the `Framework :: Django :: 4.2/5.0/5.1`
+  classifiers were removed, and those rows were dropped from the CI matrix
+  (which now covers 5.2, 6.0 and 6.1). Reasons:
+  - All three series are past upstream end of life.
+  - Django 4.2 was in fact already broken: the ASGI live-reload stream relies
+    on `ASGIRequest.listen_for_disconnect()`, which does not exist before
+    Django 5.0 — `test_asgi_disconnect_cancels_stream_and_releases_connection`
+    hangs there.
+  - `pytest-django >= 4.13` itself dropped Django < 5.2.
+
+  If you are still on Django 4.2/5.0/5.1, pin `django-dev-helpers<=0.1.14`.
+
+### Changed
+- **CI installs the latest patch of each Django series instead of the initial
+  release.** The matrix step now runs
+  `uv pip install --system "Django~=${{ matrix.django-version }}.0"` rather than
+  `Django==${{ matrix.django-version }}`. `==6.1` resolved to exactly 6.1,
+  meaning CI only ever exercised the `.0`-equivalent first release of a series
+  (e.g. 6.0 instead of 6.0.8) — not what users actually install.
+
 ## [0.1.14] — 2026-07-12
 
 ### Fixed

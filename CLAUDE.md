@@ -16,7 +16,7 @@ This is a Python package using a `src/` layout. Runtime code lives in `src/djang
 
 ## Coding Style & Naming Conventions
 
-Target Python 3.11 and keep code compatible with Django 4.2 through 6.1. Use 4-space indentation, typed public helpers where practical, and clear snake_case names for modules, functions, fixtures, and settings keys. Management commands should follow Django naming conventions, such as `dev_helpers_doctor.py`. Ruff is the source of truth for formatting and linting; line length is 120 characters.
+Target Python 3.11 and keep code compatible with Django 5.2 through 6.1. Use 4-space indentation, typed public helpers where practical, and clear snake_case names for modules, functions, fixtures, and settings keys. Management commands should follow Django naming conventions, such as `dev_helpers_doctor.py`. Ruff is the source of truth for formatting and linting; line length is 120 characters.
 
 ## Testing Guidelines
 

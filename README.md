@@ -4,7 +4,7 @@
 [![CI](https://github.com/iplweb/django-dev-helpers/actions/workflows/ci.yml/badge.svg)](https://github.com/iplweb/django-dev-helpers/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)](https://www.python.org/)
-[![Django](https://img.shields.io/badge/django-4.2%20%7C%205.0%20%7C%205.1%20%7C%205.2%20%7C%206.0%20%7C%206.1-green)](https://www.djangoproject.com/)
+[![Django](https://img.shields.io/badge/django-5.2%20%7C%206.0%20%7C%206.1-green)](https://www.djangoproject.com/)
 
 Dev-time conveniences for Django projects: autologin endpoint, dotfiles for LLM coding agents, agent help prompt, and gitignore self-check.
 
@@ -246,24 +246,28 @@ This package exposes an autologin backdoor for development. It is **always off b
 ## Requirements
 
 - Python >= 3.11
-- Django >= 4.2
+- Django >= 5.2
 
 ## Supported versions
 
 Combinations exercised on every push by the CI matrix
-(`.github/workflows/ci.yml`):
+(`.github/workflows/ci.yml`). Each cell installs the **latest patch release of
+that Django series** (`Django~=5.2.0`, not `Django==5.2`), so CI tests what
+users actually run:
 
 |             | Python 3.11 | Python 3.12 | Python 3.13 |
 |-------------|:-----------:|:-----------:|:-----------:|
-| Django 4.2  |      ✓      |      ✓      |      ✓      |
-| Django 5.0  |      ✓      |      ✓      |      ✓      |
-| Django 5.1  |      ✓      |      ✓      |      ✓      |
 | Django 5.2  |      ✓      |      ✓      |      ✓      |
 | Django 6.0  |      —      |      ✓      |      ✓      |
 | Django 6.1  |      —      |      ✓      |      ✓      |
 
 Django 6.0 and 6.1 require Python ≥ 3.12, so the `(3.11, 6.0)` and
 `(3.11, 6.1)` cells are excluded from CI.
+
+Django 4.2, 5.0 and 5.1 are **no longer supported** — they are past upstream
+end of life, and the live-reload SSE stream needs
+`ASGIRequest.listen_for_disconnect()`, which Django only added in 5.0. If you
+are still on one of those series, pin `django-dev-helpers<=0.1.14`.
 
 ## License
 
