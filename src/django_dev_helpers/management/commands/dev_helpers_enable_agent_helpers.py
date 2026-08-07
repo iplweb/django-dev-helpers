@@ -166,7 +166,7 @@ class Command(BaseCommand):
             if raw in ("c", "claude", "claude.md"):
                 return ["CLAUDE.md"] if "CLAUDE.md" in configured else [configured[0]]
             if raw in ("b", "both"):
-                both = [n for n in ("AGENTS.md", "CLAUDE.md") if n in configured]
+                both: list[str] = [n for n in ("AGENTS.md", "CLAUDE.md") if n in configured]
                 return both or list(configured[:2])
             if raw in ("s", "skip", "n", "no", ""):
                 return []
