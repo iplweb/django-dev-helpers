@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] — 2026-08-07
+
+This is a **minor** (not patch) release: it **breaks compatibility** by raising
+the Django dependency floor from `>=4.2` to `>=5.2`. See *Removed* below for the
+full reasoning and the pin to use if you are stuck on an older Django.
+
 ### Added
 - **Support for Django 6.1.** The CI matrix now also exercises Django 6.1 on
   Python 3.12 and 3.13 (Django 6.1 requires Python ≥ 3.12, so the 3.11 cell is
